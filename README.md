@@ -87,7 +87,7 @@ After running the simulation and before pressing the start button, the last two 
 
 At the same time, the LEDs on the game matrix will illuminate in a spiral pattern from top to bottom, creating an effect similar to a light show. Please see the video below for demonstration. This adds a visually engaging prelude to the game.
 
-[![before_game_starts_light_show](resources/before_game_starts_thumbnail.png)](resources/before_game_starts.mp4)
+![before_game_starts_light_show](resources/before_game_starts.gif)
 
 <b>To simplify and enhance understanding, from now on we will  refer to 'LEDs' as 'lights'.</b><br>
 Our implementation approach for this section is clear and systematic:
