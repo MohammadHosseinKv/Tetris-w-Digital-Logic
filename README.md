@@ -25,7 +25,7 @@ As rows are completed, they will flash for two seconds before being cleared, cau
   - [Game State Management](#game-state-management)
   - [Game End Condition](#game-end-condition)
   - [Timer and Score](#timer-and-score)
-  - [Generating a Random 3x3 Block](#generating-a-random-3x3-block)
+  - [Generating and Placing a Random 3x3 Block in the Game](#generating-and-placing-a-random-3x3-block-in-the-game)
   - [Control Generated Block](#control-generated-block)
   - [Shift down Generated Block](#shift-down-generated-block)
   - [Block Collision](#block-collision)
@@ -166,12 +166,14 @@ Both variables are reset to 0 when the **Reset** button is pressed.
 - **GameWon** is set to 1 when the **WinGame** signal is activated.
 - **GameLost** is set to 1 when the **LoseGame** signal is activated.
 
-These signals are generated based on the game’s win and loss conditions.
+These signals are generated based on the game's win and loss conditions.
 
 ### Win Condition
 The player wins if they collect 3 points.
 
-The player’s score is displayed on the interface using two 7-segment displays, representing the score as an 8-bit BCD (Binary-Coded Decimal) value. A comparator circuit compares this 8-bit BCD value with **0110** (the binary representation of 3). If the comparator output indicates "greater than or equal to 3," the **WinGame** signal is set to 1. This activates the **GameWon** variable, marking the game as won and ending it.
+The player's score is displayed on the interface using two 7-segment displays, representing the score as an 8-bit BCD (Binary-Coded Decimal) value.
+
+A comparator circuit compares this 8-bit BCD value with **0110** (the binary representation of 3). If the comparator output indicates "greater than or equal to 3," the **WinGame** signal is set to 1. This activates the **GameWon** variable, marking the game as won and ending it.
 
 ### Loss Conditions
 
@@ -289,7 +291,74 @@ GameStartState AND NOT(GameEndState)
 ```
 This ensures a clear and logical display of the game timer and player score.
 
-## Generating a Random 3x3 Block
+## Generating and Placing a Random 3x3 Block in the Game
+
+To create and position a random 3x3 block on the game board, we utilize a Linear-Feedback Shift Register (LFSR) to generate 6 pseudo-random bits. These bits determine both the shape and position of the block.
+
+### Generating the Random Bits
+
+**LFSR for 6-Bit Output:**
+
+The LFSR continuously generates a 6-bit pseudo-random sequence. When the block generation conditions are met, the current output of the LFSR is stored in a register to ensure stability for subsequent block generation.
+
+**Block Generation Conditions:**
+
+A block is generated only when the following conditions are met:
+
+1. All lights in the top 3 rows are off (indicating that last generated 3x3 block has completely left this area or simply the game just started).
+2. `GameStartState = 1` (the game has started).
+3. `GameEndState = 0` (the game has not ended).
+
+These conditions ensure that blocks are created only when the game is active and there is space to place a new block.
+
+### Using Random Bits to Determine the Block Shape
+
+**Block Shape Selection:**
+
+The 3 most significant bits (MSBs) of the LFSR output are used as a selector for an 8-to-1 multiplexer. This multiplexer has 8 inputs, each representing one of the predefined 3x3 block shapes, as follows:
+
+1. 010 111 010  
+2. 100 100 100  
+3. 000 001 111  
+4. 000 110 011  
+5. 000 111 100  
+6. 000 111 010  
+7. 000 101 111  
+8. 000 010 111  
+
+Each shape is represented by 9 bits (3 bits per row). The output of the multiplexer (9 bits) is stored in variables: `SHAPE0`, `SHAPE1`, ..., `SHAPE8`.
+
+![3x3_generate_block](resources/3x3_generate_block.png)
+
+### Using Random Bits to Determine Block Position
+
+#### Block Positioning:
+The three least significant bits (LSBs) of the Linear Feedback Shift Register (LFSR) output are utilized as inputs to a 3-to-8 decoder. This decoder determines which three adjacent columns on the game board the block will occupy.
+
+#### Mapping Decoder Outputs to Positions:
+Given that the game board consists of seven columns, the possible positions are as follows:
+
+- **POS0-2**: Columns 0, 1, 2
+- **POS1-3**: Columns 1, 2, 3
+- **POS2-4**: Columns 2, 3, 4
+- **POS3-5**: Columns 3, 4, 5
+- **POS4-6**: Columns 4, 5, 6
+
+To account for the eight decoder outputs, the outputs corresponding to positions 5, 6, and 7 are merged with the first five positions using OR gates. This ensures that only valid positions are generated, increasing the likelihood of placing blocks further away from the board edges.
+
+#### Connecting to Buffers:
+For each position (POS0-2, POS1-3, ..., POS4-6), a 9-bit tri-state buffer is employed. The enable condition for each buffer corresponds to its respective POS signal. The output of the buffer is then connected to the appropriate columns on the game board.
+
+**Process Summary**
+
+**Shape Selection:**  
+The top 3 bits of the LFSR output are used to select one of the predefined 8 shapes through an 8-to-1 multiplexer.
+
+**Position Selection:**  
+The bottom 3 bits of the LFSR output determine the position of the block using a 3-to-8 decoder.
+
+**Block Placement:**  
+The selected shape, which consists of 9 bits, is routed through the corresponding position buffer. This enables the shape to control the lights in the specified 3 columns.
 
 ## Control Generated Block
 
