@@ -192,7 +192,7 @@ Details on how **FullBoard** is determined can be found in the [FullBoard Condit
 The game timer is represented as an 8-bit BCD (Binary-Coded Decimal) value. To detect when the timer reaches 99 seconds, the following condition is checked:
 
 ```
-If we let 8 BCD Timer bits be T0...T7:
+If we let eight BCD Timer bits be T0...T7:
 ( (T0)AND(NOT(T1))AND(NOT(T2))AND(T3) ) 
 AND
 ( (T4)AND(NOT(T5))AND(NOT(T6))AND(T7) )
@@ -361,6 +361,91 @@ The bottom 3 bits of the LFSR output determine the position of the block using a
 The selected shape, which consists of 9 bits, is routed through the corresponding position buffer. This enables the shape to control the lights in the specified 3 columns.
 
 ## Control Generated Block
+
+After a block is generated, the player has three seconds to control it using the following actions:
+
+- **Shift Right (S_Right)**
+- **Shift Left (S_Left)**
+- **Rotate (Rotate)**
+
+### Shifting Left and Right
+
+Each of the top three rows is managed by a separate 7-bit shift register. When a block is created, its shape data is initially stored in temporary variables, which are then loaded into these shift registers. This setup allows for future modifications, such as rotations, without directly altering the display registers.
+
+#### To Shift the Block:
+
+The shift registers move their bits to the left or right. 
+
+The shift operation is clocked by the OR combination of S_Right, S_Left, Rotate, and CreationCondition signals.
+
+The shift direction is determined by the order of temporary light variables as shift register inputs:
+
+- **If left-to-right:** S_Right decides shift direction.
+
+- **If right-to-left:** S_Left decides shift direction.
+
+### Preventing Invalid Shifts
+
+To ensure that a block does not shift out of bounds:
+
+- **Shift Right** is permitted only if there are no active bits in last column. This is verified using a NOR gate that checks the bits in 7th column.
+- **Shift Left** is permitted only if there are no active bits in first column. This is verified using a NOR gate that checks the bits in 1st column .
+
+Both conditions are combined using an AND operation with the shift signals before execution. Additionally, shifts are allowed only while the ControlCondition signal is active, which means they can only occur within the three-second control window. So The previous output will be combined with **ControlCondition** using an AND operation.
+
+**Shift Registers Clock Signal:**
+```
+(S_Left AND (L0-0 NOR L1-0 NOR L2-0) AND ControlCondition) OR 
+(S_Right AND (L0-6 NOR L1-6 NOR L2-6) AND ControlCondition) OR
+(Rotate AND ControlCondition) OR
+CreationCondition
+```
+**Rotation Implementation**
+
+Blocks can rotate counterclockwise in four states:
+
+1. 0° (Initial State)
+2. 90° Counterclockwise
+3. 180° Counterclockwise
+4. 270° Counterclockwise
+
+A 2-bit counter tracks the rotation state (from 0 to 3). Each time a Rotate signal is received, the counter increments, looping back to 0 after reaching 3.
+
+A 2-to-4 decoder maps the counter value to one of four 9-bit tri-state buffers, each storing the block's shape in the correct rotated orientation. The rotations follow this pattern:
+
+**Initial Shape (0°):**
+
+```
+1 2 3
+4 5 6
+7 8 9
+```
+
+**After 90° Counterclockwise Rotation:**
+
+```
+3 6 9
+2 5 8
+1 4 7
+```
+
+Each further 90° rotation applies the same transformation. The new rotated shape is stored in temporary variables before being loaded into shift registers, ensuring seamless display updates.
+
+**Center of Rotation**
+
+The block must rotate around its current column position. A shift register stores the block's current position and updates it when the block shifts left or right. This approach ensures that the rotated shapes remain within their assigned three columns. The position register:
+
+1. Loads the initial position upon block creation.
+2. Shifts left or right when the player moves the block.
+3. Prevents shifting beyond the edges of the board by applying conditions to POS4-6 (for right shifts) and POS0-2 (for left shifts).
+
+Each rotation applies the updated shape data to the relevant three columns based on the position register.
+
+**Finalizing Block Placement**
+
+When the 3-second control period ends, the block becomes fixed in place.
+The block’s shape is transferred to the game board registers, and the falling mechanism begins.
+Then when the last generated block completely exits the three first rows, the next block generation process starts.
 
 ## Shift down Generated Block
 
