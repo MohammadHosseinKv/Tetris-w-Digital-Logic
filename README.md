@@ -27,7 +27,7 @@ As rows are completed, they will flash for two seconds before being cleared, cau
   - [Timer and Score](#timer-and-score)
   - [Generating and Placing a Random 3x3 Block in the Game](#generating-and-placing-a-random-3x3-block-in-the-game)
   - [Control Generated Block](#control-generated-block)
-  - [Shift down Generated Block](#shift-down-generated-block)
+  - [Downward Shift of the Generated Block](#downward-shift-of-the-generated-block)
   - [Block Collision](#block-collision)
   - [Gaining Score](#gaining-score)
   - [Fullboard Condition](#fullboard-condition)
@@ -89,7 +89,9 @@ At the same time, the LEDs on the game matrix will illuminate in a spiral patter
 
 ![before_game_starts_light_show](resources/before_game_starts.gif)
 
-<b>To simplify and enhance understanding, from now on we will  refer to 'LEDs' as 'lights'.</b><br>
+> **_NOTE:_** To simplify and enhance understanding, from now on we will  refer to 'LEDs' as 'lights'.
+
+
 Our implementation approach for this section is clear and systematic:
 
 ### Blinking Student ID Digits on 7-Segment Displays
@@ -447,7 +449,83 @@ When the 3-second control period ends, the block becomes fixed in place.
 The block’s shape is transferred to the game board registers, and the falling mechanism begins.
 Then when the last generated block completely exits the three first rows, the next block generation process starts.
 
-## Shift down Generated Block
+## Downward Shift of the Generated Block
+
+Once the block is finalized after the 3-second control period, it must transition from the construction phase to the game board. This section explains how the block moves downward within the game grid.
+
+### Transferring Block Data to the Game Core
+
+After a block is created and the 3-second movement/rotation period expires, it becomes static. This is determined when both the ControlCondition and CreationCondition signals are deactivated (set to 0).
+
+At this point, the values stored in the shift registers, which are responsible for constructing and controlling the block, are transferred to the Game Core section, managing the main grid of the game.
+
+To facilitate this transfer:
+
+1. The Enabler for the construction/control registers is set to ControlCondition.
+2. The Enabler for the Game Core registers is set to NOT(ControlCondition).
+3. The Load signal is activated simultaneously, ensuring proper data transfer.
+
+### Game Core Structure and Shift Register Configuration
+
+In the Game Core section, shift registers are used to store and move blocks downward. The configuration is as follows:
+
+- **First 3 Rows**: Each column in the top three rows has its own 3-bit shift register. Since the board has 7 columns, this results in 7 shift registers handling the 21 lights of the top three rows.
+  
+- **Rows 4 to 10**: Each light (cell) in these rows has an individual shift register that stores Blue (B) and Yellow (Y) values, representing the block's color state. As the game board contains 49 lights from row 4 onward, this requires 49 shift registers.
+
+### Total Shift Registers
+
+- 7 shift registers for the top 3 rows
+- 49 shift registers for rows 4-10
+- **Total**: 56 shift registers
+
+### Functionality of Shift Registers in Rows 1-3
+
+The 7 shift registers managing the first three rows have a unique function:
+
+Each register receives three input values (one from each row) from its respective column, along with a 0 (Ground) input at DL (Data Load).
+
+With each shift operation:
+
+- The first bit is replaced with 0.
+- The remaining bits shift downward from row 1 to row 3.
+- The outputs of these registers are connected to the corresponding column lights.
+
+These shift registers operate with a 1Hz clock, meaning the block moves down once per second.
+
+### Load Signal Conditions
+
+The load signal is activated when the following conditions are met:
+
+- GameStartState = 1 (Game is running)
+- NOT(GameEndState) = 1 (Game is not over)
+- ControlCondition = 1 (Block is still in the control phase)
+
+However, the Output Enable (OE) is set to NOT(ControlCondition), which means the transferred data remains hidden until the block is finalized. 
+
+When ControlCondition switches to 0:
+
+- The Load signal is deactivated.
+- The shift registers become active, and the block starts moving downward at each clock pulse.
+- The third row's values transition into the fourth-row shift registers, ensuring there is no premature movement into row 4 before finalization.
+
+![first three rows shift register implementation schematic](resources/first_three_rows%20shift_register_implementation_schematic.png)
+
+### Downward Shift in Rows 4-10
+
+From row 4 onward, each shift register behaves independently:
+
+- The Yellow (Y) and Blue (B) values from the current row are loaded into the shift register of the row below.
+- The shift occurs at each clock pulse, effectively moving the entire block downward one row per second.
+
+This setup allows full control over each light, mimicking the behavior of a 2D shift register system.
+
+![rows four to six shift register implementation schematic](resources/rows_four_to_six_shift_register_implementation_schematic.png)
+> **_NOTE:_** In all of the schematic images above, the variables indices begin from 0.
+
+### Next Steps: Collision Handling & Block Locking
+
+Now that the downward shift mechanism is in place, the next step involves handling collisions and locking blocks in place by transferring Yellow (Y) values into Blue (B). This will be covered in the next section.
 
 ## Block Collision
 
