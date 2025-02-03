@@ -42,11 +42,11 @@ As rows are completed, they will flash for two seconds before being cleared, cau
 ## Gameplay Overview
 
 ### General Rules and Interface Setup
-The game interface consists of an 10x7 grid of LED , four seven segment responsible for displaying time and score and five control buttons which are Start , Reset , Rotate , S_Right and S_Left.
+The game interface consists of a 10x7 grid of LED, four seven segments responsible for displaying time and score, and five control buttons which are Start, Reset, Rotate, S_Right, and S_Left.
 
-In the interface, each LED can either be on or off. The LEDs in the first three rows, when lit, are red, while the LEDs in rows four to ten can be either yellow or blue.
+In the interface, each LED can either be on or off. When lit, the LEDs in the first three rows are red, while the LEDs in rows four to ten can be either yellow or blue.
 
-Yellow LEDs indicate a moving block, whereas blue LEDs represent a fixed block. If any part of a moving block collides with the bottom of the grid or with a fixed block, the entire moving block becomes fixed at the point of collision.
+Yellow LEDs indicate a moving block, whereas blue LEDs represent a fixed block. If any part of a moving block collides with the bottom of the grid or a fixed block, the entire moving block becomes fixed at the collision point.
 
 #### End Condition:
 
@@ -85,12 +85,14 @@ The objective of the game is to arrange the blocks so they align in a single row
 ## Before Game Starts
 After running the simulation and before pressing the start button, the last two digits of the student ID numbers of the two project group members will alternately blink on the four 7-segment displays.
 
-At the same time, the LEDs on the game matrix will illuminate in a spiral pattern from top to bottom, creating an effect similar to a light show. Please see the video below for demonstration. This adds a visually engaging prelude to the game.
+At the same time, the LEDs on the game matrix will illuminate in a spiral pattern from top to bottom, creating an effect similar to a light show. Please see the video below for a demonstration. This adds a visually engaging prelude to the game.
 
 ![before_game_starts_light_show](resources/before_game_starts.gif)
 
-> **_NOTE:_** To simplify and enhance understanding, from now on we will  refer to 'LEDs' as 'lights'.
-
+> [!NOTE] 
+>
+> To simplify and enhance understanding, from now on we will  refer to 'LEDs' as 'lights'.
+>
 
 Our implementation approach for this section is clear and systematic:
 
@@ -228,7 +230,7 @@ LoseGame = (FullBoard OR (BCD Timer AND 1001 1001)) AND GameStartState
 
 ## Timer and Score
 
-To display the game timer and player score, we use four 7-segment displays, each driven by a Binary-Coded Decimal (BCD) value, since humans naturally count in base-10. Below is a detailed implementation:
+To display the game timer and player score, we use four 7-segment displays, each driven by a Binary-Coded Decimal (BCD) value since humans naturally count in base-10. Below is a detailed implementation:
 
 ### Game Timer
 
@@ -307,7 +309,7 @@ The LFSR continuously generates a 6-bit pseudo-random sequence. When the block g
 
 A block is generated only when the following conditions are met:
 
-1. All lights in the top 3 rows are off (indicating that last generated 3x3 block has completely left this area or simply the game just started).
+1. All lights in the top 3 rows are off (indicating that the last generated 3x3 block has completely left this area or simply the game just started).
 2. `GameStartState = 1` (the game has started).
 3. `GameEndState = 0` (the game has not ended).
 
@@ -390,8 +392,8 @@ The shift direction is determined by the order of temporary light variables as s
 
 To ensure that a block does not shift out of bounds:
 
-- **Shift Right** is permitted only if there are no active bits in last column. This is verified using a NOR gate that checks the bits in 7th column.
-- **Shift Left** is permitted only if there are no active bits in first column. This is verified using a NOR gate that checks the bits in 1st column .
+- **Shift Right** is permitted only if there are no active bits in the last column. This is verified using a NOR gate that checks the bits in the 7th column.
+- **Shift Left** is permitted only if there are no active bits in the first column. This is verified using a NOR gate that checks the bits in 1st column.
 
 Both conditions are combined using an AND operation with the shift signals before execution. Additionally, shifts are allowed only while the ControlCondition signal is active, which means they can only occur within the three-second control window. So The previous output will be combined with **ControlCondition** using an AND operation.
 
@@ -521,7 +523,10 @@ From row 4 onward, each shift register behaves independently:
 This setup allows full control over each light, mimicking the behavior of a 2D shift register system.
 
 ![rows four to six shift register implementation schematic](resources/rows_four_to_six_shift_register_implementation_schematic.png)
-> **_NOTE:_** In all of the schematic images above, the variables indices begin from 0.
+> [!NOTE]
+>
+> In all of the schematic images above, the variables indices begin from 0.
+>
 
 ### Next Steps: Collision Handling & Block Locking
 
