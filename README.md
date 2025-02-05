@@ -25,13 +25,41 @@ As rows are completed, they will flash for two seconds before being cleared, cau
   
 - [Implementation Idea](#implementation-idea)
   - [Before Game Starts](#before-game-starts)
+    - [Blinking Student ID Digits on 7-Segment Displays](#blinking-student-id-digits-on-7-segment-displays)
+    - [Light Show (Spiral Pattern)](#light-show-spiral-pattern)
   - [Game State Management](#game-state-management)
+    - [Functionality of the States](#functionality-of-the-states)
+    - [Game State Table](#game-state-table)
+    - [Controlling Circuit Activities](#controlling-circuit-activities)
   - [Game End Condition](#game-end-condition)
+    - [Win Condition](#win-condition)
+    - [Loss Conditions](#loss-conditions)
+    - [Summary of Logic](#summary-of-logic)
   - [Timer and Score](#timer-and-score)
+    - [Game Timer](#game-timer)
+    - [Player Score](#player-score)
   - [Generating and Placing a Random 3x3 Block in the Game](#generating-and-placing-a-random-3x3-block-in-the-game)
+    - [Generating the Random Bits](#generating-the-random-bits)
+    - [Using Random Bits to Determine the Block Shape](#using-random-bits-to-determine-the-block-shape)
+    - [Using Random Bits to Determine Block Position](#using-random-bits-to-determine-block-position)
+    - [Process Summary](#process-summary)
   - [Control Generated Block](#control-generated-block)
+    - [Shifting Left and Right](#shifting-left-and-right)
+    - [Preventing Invalid Shifts](#preventing-invalid-shifts)
+    - [Rotation Implementation](#rotation-implementation)
+    - [Center of Rotation](#center-of-rotation)
   - [Downward Shift of the Generated Block](#downward-shift-of-the-generated-block)
+    - [Transferring Block Data to the Game Core](#transferring-block-data-to-the-game-core)
+    - [Game Core Structure and Shift Register Configuration](#game-core-structure-and-shift-register-configuration)
+    - [Functionality of Shift Registers in Rows 1-3](#functionality-of-shift-registers-in-rows-1-3)
+    - [Downward Shift in Rows 4-10](#downward-shift-in-rows-4-10)
   - [Collision Handling & Block Locking Mechanism](#collision-handling--block-locking-mechanism)
+    - [Step 1: Independent Behavior of Lights (Before Group Dependency)](#step-1-independent-behavior-of-lights-before-group-dependency)
+    - [Step 2: Transitioning from Y (Moving) to B (Fixed)](#step-2-transitioning-from-y-moving-to-b-fixed)
+    - [Step 3: Adding Group Behavior (Locking Entire Blocks Instead of Individual Lights)](#step-3-adding-group-behavior-locking-entire-blocks-instead-of-individual-lights)
+    - [Step 4: Updating Collision Conditions for Block Groups](#step-4-updating-collision-conditions-for-block-groups)
+    - [Step 5: Updating Load Conditions](#step-5-updating-load-conditions)
+    - [Supplementary Information](#supplementary-information)
   - [Gaining Score](#gaining-score)
   - [Fullboard Condition](#fullboard-condition)
   - [Notes](#notes)
@@ -92,8 +120,10 @@ At the same time, the LEDs on the game matrix will illuminate in a spiral patter
 
 ![before_game_starts_light_show](resources/before_game_starts.gif)
 
-> **_NOTE:_** To simplify and enhance understanding, from now on we will  refer to 'LEDs' as 'lights'.
-
+> [!NOTE]
+>
+> To simplify and enhance understanding, from now on we will  refer to 'LEDs' as 'lights'.
+>
 
 Our implementation approach for this section is clear and systematic:
 
@@ -133,7 +163,7 @@ To manage the state of the game, we utilize two variables: GameStartState and Ga
 - **GameStartState = 1**: This indicates that the game has started, meaning the player has clicked the Start button.
 - **GameEndState = 1**: This indicates that the game has ended, whether the player won or lost.
 
-### Functionality of the States:
+### Functionality of the States
 
 **GameStartState**:
 - When the Start button is pressed, a value of 1 is loaded into the register associated with the GameStartState output.
@@ -354,7 +384,7 @@ To account for the eight decoder outputs, the outputs corresponding to positions
 #### Connecting to Buffers:
 For each position (POS0-2, POS1-3, ..., POS4-6), a 9-bit tri-state buffer is employed. The enable condition for each buffer corresponds to its respective POS signal. The output of the buffer is then connected to the appropriate columns on the game board.
 
-**Process Summary**
+### Process Summary
 
 **Shape Selection:**  
 The top 3 bits of the LFSR output are used to select one of the predefined 8 shapes through an 8-to-1 multiplexer.
@@ -405,7 +435,7 @@ Both conditions are combined using an AND operation with the shift signals befor
 (Rotate AND ControlCondition) OR
 CreationCondition
 ```
-**Rotation Implementation**
+### Rotation Implementation
 
 Blocks can rotate counterclockwise in four states:
 
@@ -436,7 +466,7 @@ A 2-to-4 decoder maps the counter value to one of four 9-bit tri-state buffers, 
 
 Each further 90° rotation applies the same transformation. The new rotated shape is stored in temporary variables before being loaded into shift registers, ensuring seamless display updates.
 
-**Center of Rotation**
+### Center of Rotation
 
 The block must rotate around its current column position. A shift register stores the block's current position and updates it when the block shifts left or right. This approach ensures that the rotated shapes remain within their assigned three columns. The position register:
 
@@ -572,6 +602,8 @@ Y_{9,j} \ AND \ 1
 
 Since AND with 1 does not change the value, this means **any Yellow light in row 10 automatically triggers a collision.**
 
+![light_pis](resources/light_pis.PNG)
+
 ---
 
 ### **Step 2: Transitioning from Y (Moving) to B (Fixed)**
@@ -591,6 +623,11 @@ That means:
 
 - **If there is no collision** → HOLD remains **1**, allowing the block to keep shifting down.
 - **If a collision occurs** → HOLD becomes **0**, causing Y to be copied into B, effectively "freezing" the light.
+
+> [!NOTE]
+>
+> **In the implementation, we utilize the collision condition directly rather than its negation. However, we still negate the output of the Collision Condition using NAND instead of AND gate.** This means that we connect the collision condition variable directly to the shift register of the light, eliminating the need to include a NOT gate.
+>
 
 ---
 
@@ -630,6 +667,8 @@ This works because **all generated blocks are 3×3** in size. Given the game mec
 
 While this method **isn't as elegant as the ID-based approach**, it works **within the constraints of the project**.
 
+![pisrow](resources/pisrow.PNG)
+
 ---
 
 ### **Step 4: Updating Collision Conditions for Block Groups**
@@ -653,12 +692,19 @@ to denote **if any collision happened in rows** [i-2, i+2].
 
 Then:
 ```math
-\text{Final Collision Condition}(i, j) = \neg B(i, j) \ AND \ PIS\text{ROW}_{i-2 \text{ to } i+2}
+\text{Final Collision Condition or IS}(i, j) = \neg B(i, j) \ AND \ PIS\text{ROW}_{i-2 \text{ to } i+2}
 ```
 
 This ensures that:
 - **Only moving lights (not already fixed ones) are affected**.
 - **If any light in a block collides, the entire block locks**.
+
+![light_is](resources/light_is.PNG)
+
+> [!NOTE]
+>
+> The naming of the final light collision condition as "IS" stands for "Inner Shift." This term is used because it describes how the shift register internally shifts the B and Y values, rather than employing a downward shifting mechanism on the game board. Similarly, "PIS" stands for "Partial Inner Shift."
+>
 
 ---
 
@@ -668,25 +714,25 @@ Now that blocks are freezing properly, we must ensure **fixed blocks don't shift
 Each shift register should only load new data if:
 1. **The current light isn’t already fixed (B = 0).**
 2. **The light in the row above isn’t fixed (to prevent shifting downward).**
-3. **The collision condition hasn’t been triggered (to prevent overriding the freeze action).**
+3. **The collision condition(IS) hasn’t been triggered (to prevent overriding the freeze action).**
 
 Mathematically:
 
 ```math
-\text{Load Condition}(i, j) = \neg B(i, j) \ AND \ \neg B(i-1, j) \ AND \ \neg \text{Collision Condition}(i, j)
+\text{Load Condition}(i, j) = \neg B(i, j) \ AND \ \neg B(i-1, j) \ AND \ \neg \text{IS}(i, j)
 ```
 
 **Example:**
 For **row 5, column 2 (Light4-1)**:
 
 ```math
-\neg B(4,1) \ AND \ \neg B(3,1) \ AND \ \neg \text{Collision Condition}(4,1)
+\neg B(4,1) \ AND \ \neg B(3,1) \ AND \ \neg \text{IS}(4,1)
 ```
 
 For row **4**, there’s no light above it that can be static, so as an example for **row 4, column 6** we simplify:
 
 ```math
-\neg B(3,5) \ AND \ \neg \text{Collision Condition}(3,5)
+\neg B(3,5) \ AND \ \neg \text{IS}(3,5)
 ```
 
 This ensures:
@@ -694,14 +740,23 @@ This ensures:
 - The row below doesn’t keep shifting into a fixed row.
 - Blocks that **should freeze** don’t get overridden by a load operation.
 
+![light_load](resources/light_load.PNG)
+
+> [!NOTE]
+>
+> Since we already negated IS through NAND gate, so we don't negate it again during load condition check.
+>
+
 ---
 
 ### **Supplementary Information**
+
+The variables **indices all begin from 0** thats why index of a light in row 4, column 3 would be L3-2.
+
+LForce variables will be introduced in [Gaining Score](#gaining-score) section which forces load condition to be true.
+
 While the **simple row-freezing method** was used for quick implementation, a **block ID-based method** would be better for a long-term solution. The main **downside** of the current approach is that it **relies on block size assumptions** (3×3), hence limiting flexibility.
 
-For a **better future version**, consider:
-- **A 2-bit block identifier system**.
-- **A proper block dependency graph**, where collisions trigger a **cascade effect** only within a block.
 
 That said, given the constraints, this method **works well for meeting the deadline** and maintaining correct gameplay behavior. 🚀
 
