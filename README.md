@@ -8,7 +8,10 @@ As rows are completed, they will flash for two seconds before being cleared, cau
 - A block collides with a fixed block in the top three rows and cannot move out of the area.
 - The timer reaches 99 seconds. 
 
-<b>This document explains the overall project, the idea behind its implementation, and the functionality of each section.</b>
+> [!NOTE]
+>
+> This document explains the overall project, the idea behind its implementation, and the functionality of each section.
+>
 
 ![project interface pic](resources/project_interface.png)
 
@@ -28,7 +31,7 @@ As rows are completed, they will flash for two seconds before being cleared, cau
   - [Generating and Placing a Random 3x3 Block in the Game](#generating-and-placing-a-random-3x3-block-in-the-game)
   - [Control Generated Block](#control-generated-block)
   - [Downward Shift of the Generated Block](#downward-shift-of-the-generated-block)
-  - [Block Collision](#block-collision)
+  - [Collision Handling & Block Locking Mechanism](#collision-handling--block-locking-mechanism)
   - [Gaining Score](#gaining-score)
   - [Fullboard Condition](#fullboard-condition)
   - [Notes](#notes)
@@ -42,11 +45,11 @@ As rows are completed, they will flash for two seconds before being cleared, cau
 ## Gameplay Overview
 
 ### General Rules and Interface Setup
-The game interface consists of a 10x7 grid of LED, four seven segments responsible for displaying time and score, and five control buttons which are Start, Reset, Rotate, S_Right, and S_Left.
+The game interface consists of an 10x7 grid of LED , four seven segment responsible for displaying time and score and five control buttons which are Start , Reset , Rotate , S_Right and S_Left.
 
-In the interface, each LED can either be on or off. When lit, the LEDs in the first three rows are red, while the LEDs in rows four to ten can be either yellow or blue.
+In the interface, each LED can either be on or off. The LEDs in the first three rows, when lit, are red, while the LEDs in rows four to ten can be either yellow or blue.
 
-Yellow LEDs indicate a moving block, whereas blue LEDs represent a fixed block. If any part of a moving block collides with the bottom of the grid or a fixed block, the entire moving block becomes fixed at the collision point.
+Yellow LEDs indicate a moving block, whereas blue LEDs represent a fixed block. If any part of a moving block collides with the bottom of the grid or with a fixed block, the entire moving block becomes fixed at the point of collision.
 
 #### End Condition:
 
@@ -85,14 +88,12 @@ The objective of the game is to arrange the blocks so they align in a single row
 ## Before Game Starts
 After running the simulation and before pressing the start button, the last two digits of the student ID numbers of the two project group members will alternately blink on the four 7-segment displays.
 
-At the same time, the LEDs on the game matrix will illuminate in a spiral pattern from top to bottom, creating an effect similar to a light show. Please see the video below for a demonstration. This adds a visually engaging prelude to the game.
+At the same time, the LEDs on the game matrix will illuminate in a spiral pattern from top to bottom, creating an effect similar to a light show. Please see the video below for demonstration. This adds a visually engaging prelude to the game.
 
 ![before_game_starts_light_show](resources/before_game_starts.gif)
 
-> [!NOTE] 
->
-> To simplify and enhance understanding, from now on we will  refer to 'LEDs' as 'lights'.
->
+> **_NOTE:_** To simplify and enhance understanding, from now on we will  refer to 'LEDs' as 'lights'.
+
 
 Our implementation approach for this section is clear and systematic:
 
@@ -230,7 +231,7 @@ LoseGame = (FullBoard OR (BCD Timer AND 1001 1001)) AND GameStartState
 
 ## Timer and Score
 
-To display the game timer and player score, we use four 7-segment displays, each driven by a Binary-Coded Decimal (BCD) value since humans naturally count in base-10. Below is a detailed implementation:
+To display the game timer and player score, we use four 7-segment displays, each driven by a Binary-Coded Decimal (BCD) value, since humans naturally count in base-10. Below is a detailed implementation:
 
 ### Game Timer
 
@@ -309,7 +310,7 @@ The LFSR continuously generates a 6-bit pseudo-random sequence. When the block g
 
 A block is generated only when the following conditions are met:
 
-1. All lights in the top 3 rows are off (indicating that the last generated 3x3 block has completely left this area or simply the game just started).
+1. All lights in the top 3 rows are off (indicating that last generated 3x3 block has completely left this area or simply the game just started).
 2. `GameStartState = 1` (the game has started).
 3. `GameEndState = 0` (the game has not ended).
 
@@ -392,8 +393,8 @@ The shift direction is determined by the order of temporary light variables as s
 
 To ensure that a block does not shift out of bounds:
 
-- **Shift Right** is permitted only if there are no active bits in the last column. This is verified using a NOR gate that checks the bits in the 7th column.
-- **Shift Left** is permitted only if there are no active bits in the first column. This is verified using a NOR gate that checks the bits in 1st column.
+- **Shift Right** is permitted only if there are no active bits in last column. This is verified using a NOR gate that checks the bits in 7th column.
+- **Shift Left** is permitted only if there are no active bits in first column. This is verified using a NOR gate that checks the bits in 1st column .
 
 Both conditions are combined using an AND operation with the shift signals before execution. Additionally, shifts are allowed only while the ControlCondition signal is active, which means they can only occur within the three-second control window. So The previous output will be combined with **ControlCondition** using an AND operation.
 
@@ -532,7 +533,177 @@ This setup allows full control over each light, mimicking the behavior of a 2D s
 
 Now that the downward shift mechanism is in place, the next step involves handling collisions and locking blocks in place by transferring Yellow (Y) values into Blue (B). This will be covered in the next section.
 
-## Block Collision
+## Collision Handling & Block Locking Mechanism
+
+In the game, a **moving block** can become a **fixed block** under two conditions:  
+
+1. **It reaches the bottom** of the game grid.  
+2. **It collides with an existing fixed block.**  
+
+When either of these conditions is met, all parts of the block transition from **Yellow (Y) to Blue (B)**, indicating they are now part of the static game board.
+
+---
+
+### **Step 1: Independent Behavior of Lights (Before Group Dependency)**
+
+To simplify the collision logic, we first assume that **each moving light is independent** and doesn't belong to a block group. That means each individual light will turn into a fixed block only when it **personally collides** with something below it.
+
+### **Detecting Collision for Rows 3-9**
+A collision is detected by **AND-ing the Yellow (Y) value of the current light** with the **Blue (B) value of the light directly below it**:
+
+```math
+\text{Collision Condition} = Y(i, j) \ AND \ B(i+1, j)
+```
+
+For example, in **row 4, column 0**, the collision condition is:
+
+```math
+Y3-0 \ AND \ B4-0
+```
+
+If this condition evaluates to **1**, the light must become part of the static grid.
+
+### **Handling Row 10 (Last Row)**
+For the bottom row (row 10), there's no row below to check. Instead, we consider a light to have **collided when it simply exists**:
+
+```math
+Y_{9,j} \ AND \ 1
+```
+
+Since AND with 1 does not change the value, this means **any Yellow light in row 10 automatically triggers a collision.**
+
+---
+
+### **Step 2: Transitioning from Y (Moving) to B (Fixed)**
+
+Once a collision is detected, we must shift the **Y value** into **B** on the next clock edge. This is done by using the **HOLD** input of the shift register.
+
+- **HOLD = 1:** No shift occurs (light remains moving).
+- **HOLD = 0:** The register shifts the **Y value into B**, making the light fixed.
+
+To achieve this:
+
+```math
+\text{HOLD}(i, j) = \text{NOT} (\text{Collision Condition}(i, j))
+```
+
+That means:
+
+- **If there is no collision** → HOLD remains **1**, allowing the block to keep shifting down.
+- **If a collision occurs** → HOLD becomes **0**, causing Y to be copied into B, effectively "freezing" the light.
+
+---
+
+### **Step 3: Adding Group Behavior (Locking Entire Blocks Instead of Individual Lights)**
+
+So far, only individual lights become fixed when they collide. However, **entire blocks need to freeze together**. Otherwise, a falling Tetris-like piece would break into smaller parts instead of landing as a unit.
+
+### **Solution 1: Unique Block Identifiers (More General Approach)**
+A logical approach would be to assign **a unique 2-bit identifier** to each block at creation. This way:
+
+- Each moving light knows which block it belongs to.
+- If **any part** of the block collides, all other lights with the **same ID** will also be locked.
+
+The **ID system uses a 2-bit counter**, allowing **up to 4 distinct moving blocks** to exist at the same time (since new blocks only appear every few seconds).
+
+If a block's **ID matches** that of a colliding light, **all its lights must become fixed** as well.
+
+This is the **ideal method** for a more scalable implementation.
+
+---
+
+### **Solution 2: Simple Proximity Locking (Current Implementation)**
+For a quick solution before the project deadline, we use **a less precise but functional method**:
+
+- If **any light in a row collides**, all lights in:
+  - The **same row**
+  - **Two rows above**
+  - **Two rows below**
+  
+  will **also be fixed**.
+
+This works because **all generated blocks are 3×3** in size. Given the game mechanics, this assumption is valid since no other blocks will be in this range.
+
+**Example:**
+- If a light in **row 6** collides:
+  - **Rows 4, 5, 6, 7, and 8** all become fixed.
+
+While this method **isn't as elegant as the ID-based approach**, it works **within the constraints of the project**.
+
+---
+
+### **Step 4: Updating Collision Conditions for Block Groups**
+Previously, the **collision condition only checked individual lights**. Now, we extend it to apply to **entire block groups**.
+
+For a light at **(i, j)**:
+
+```math
+\text{Block Collision Condition} = \neg B(i-1, j) \ AND \ \text{Collision Occurred in Rows (i-2 to i+2)}
+```
+
+If we use:
+```math
+PIS(i, j)
+```
+to denote **the independent collision condition** at (i, j). and
+```math
+PIS\text{ROW}_{i-2 \text{ to } i+2}
+```
+to denote **if any collision happened in rows** [i-2, i+2].
+
+Then:
+```math
+\text{Final Collision Condition}(i, j) = \neg B(i, j) \ AND \ PIS\text{ROW}_{i-2 \text{ to } i+2}
+```
+
+This ensures that:
+- **Only moving lights (not already fixed ones) are affected**.
+- **If any light in a block collides, the entire block locks**.
+
+---
+
+### **Step 5: Updating Load Conditions**
+Now that blocks are freezing properly, we must ensure **fixed blocks don't shift anymore**.
+
+Each shift register should only load new data if:
+1. **The current light isn’t already fixed (B = 0).**
+2. **The light in the row above isn’t fixed (to prevent shifting downward).**
+3. **The collision condition hasn’t been triggered (to prevent overriding the freeze action).**
+
+Mathematically:
+
+```math
+\text{Load Condition}(i, j) = \neg B(i, j) \ AND \ \neg B(i-1, j) \ AND \ \neg \text{Collision Condition}(i, j)
+```
+
+**Example:**
+For **row 5, column 2 (Light4-1)**:
+
+```math
+\neg B(4,1) \ AND \ \neg B(3,1) \ AND \ \neg \text{Collision Condition}(4,1)
+```
+
+For row **4**, there’s no light above it that can be static, so as an example for **row 4, column 6** we simplify:
+
+```math
+\neg B(3,5) \ AND \ \neg \text{Collision Condition}(3,5)
+```
+
+This ensures:
+- Fixed blocks don’t shift.
+- The row below doesn’t keep shifting into a fixed row.
+- Blocks that **should freeze** don’t get overridden by a load operation.
+
+---
+
+### **Supplementary Information**
+While the **simple row-freezing method** was used for quick implementation, a **block ID-based method** would be better for a long-term solution. The main **downside** of the current approach is that it **relies on block size assumptions** (3×3), hence limiting flexibility.
+
+For a **better future version**, consider:
+- **A 2-bit block identifier system**.
+- **A proper block dependency graph**, where collisions trigger a **cascade effect** only within a block.
+
+That said, given the constraints, this method **works well for meeting the deadline** and maintaining correct gameplay behavior. 🚀
 
 ## Gaining Score
 
