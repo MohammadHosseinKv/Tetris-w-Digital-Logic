@@ -60,7 +60,15 @@ As rows are completed, they will flash for two seconds before being cleared, cau
     - [Step 4: Updating Collision Conditions for Block Groups](#step-4-updating-collision-conditions-for-block-groups)
     - [Step 5: Updating Load Conditions](#step-5-updating-load-conditions)
     - [Supplementary Information](#supplementary-information)
-  - [Gaining Score](#gaining-score)
+  - [Score Calculation and Row Clearing Mechanism](#score-calculation-and-row-clearing-mechanism)
+    - [Step 1: Detecting and Blinking Full Rows Before Deletiion](#step-1-detecting-and-blinking-full-rows-before-deletiion)
+    - [Step 2: Generating the Blinking Signal for Rows](#step-2-generating-the-blinking-signal-for-rows)
+    - [Step 3: Controlling the Blinking Duration (2 Seconds Limit)](#step-3-controlling-the-blinking-duration-2-seconds-limit)
+    - [Step 4: Define And Store Row Full Condition](#step-4-define-and-store-row-full-condition)
+    - [Step 5: Deleting Full Rows & Shifting Upper Rows Down](#step-5-deleting-full-rows--shifting-upper-rows-down)
+      - [5.1 Understanding the Row Deletion Process](#51-understanding-the-row-deletion-process)
+      - [5.2 Handling Multiple Full Rows (Priority Encoder & Decoder Mechanism)](#52-handling-multiple-full-rows-priority-encoder--decoder-mechanism)
+    - [Step 6: Adding Score After Row Deletion](#step-6-adding-score-after-row-deletion)
   - [Fullboard Condition](#fullboard-condition)
   - [Notes](#notes)
 - [Installation](#installation)
@@ -171,7 +179,7 @@ To manage the state of the game, we utilize two variables: GameStartState and Ga
 
 **GameEndState**:
 - The value of GameEndState is determined by the XOR operation applied to two variables: GameWon and GameLost. 
-- These variables are explained in further detail in the section on [Game End Conditions](#game-end-condition).
+- These variables are explained in further detail in the section on [Game End Condition](#game-end-condition).
 
 ### Game State Table
 
@@ -208,7 +216,7 @@ The player wins if they collect 3 points.
 
 The player's score is displayed on the interface using two 7-segment displays, representing the score as an 8-bit BCD (Binary-Coded Decimal) value.
 
-A comparator circuit compares this 8-bit BCD value with **0110** (the binary representation of 3). If the comparator output indicates "greater than or equal to 3," the **WinGame** signal is set to 1. This activates the **GameWon** variable, marking the game as won and ending it.
+A comparator circuit compares this 8-bit BCD value with **0000 0011** (the binary representation of 3). If the comparator output indicates "greater than or equal to 3," the **WinGame** signal is set to 1. This activates the **GameWon** variable, marking the game as won and ending it.
 
 ### Loss Conditions
 
@@ -224,13 +232,11 @@ Details on how **FullBoard** is determined can be found in the [FullBoard Condit
 
 ### Timer Reaches 99 Seconds
 
-The game timer is represented as an 8-bit BCD (Binary-Coded Decimal) value. To detect when the timer reaches 99 seconds, the following condition is checked:
+The game timer is represented as an 8-bit BCD (Binary-Coded Decimal) value. To detect when the timer reaches 99 (**1001 1001 in BCD**) seconds, the following condition is checked:
 
-```
 If we let eight BCD Timer bits be T0...T7:
-( (T0)AND(NOT(T1))AND(NOT(T2))AND(T3) ) 
-AND
-( (T4)AND(NOT(T5))AND(NOT(T6))AND(T7) )
+```math
+(T0 \ \text{AND} \ \neg T1 \ \text{AND} \ \neg T2 \ \text{AND} \ T3) \ \text{AND} \ (T4 \ \text{AND} \ \neg T5 \ \text{AND} \ \neg T6 \ \text{AND} \ T7)
 ```
 
 If this condition evaluates to true, the `LoseGame` signal is triggered, resulting in `GameLost` being set to 1 and the game ending.
@@ -239,16 +245,18 @@ If this condition evaluates to true, the `LoseGame` signal is triggered, resulti
 
 The `LoseGame` signal is determined based on the following conditions:
 
-```
-LoseGame = FullBoard OR (BCD Timer AND 1001 1001)
+```math
+LoseGame = FullBoard \ \text{OR} \\ ( \ (T0 \ \text{AND} \ \neg T1 \ \text{AND} \ \neg T2 \ \text{AND} \ T3) \ \text{AND} \ (T4 \ \text{AND} \ \neg T5 \ \text{AND} \ \neg T6 \ \text{AND} \ T7) \ )
+
 ```
 
 This means the game will be marked as lost if either the board is full or the timer has reached 99 seconds.
 
 To ensure these loss conditions only apply after the game has started, we finalize the `LoseGame` condition by ANDing it with the `GameStartState`:
 
-```
-LoseGame = (FullBoard OR (BCD Timer AND 1001 1001)) AND GameStartState
+```math
+LoseGame = FullBoard \ \text{OR} \\ ( \ (T0 \ \text{AND} \ \neg T1 \ \text{AND} \ \neg T2 \ \text{AND} \ T3) \ \text{AND} \ (T4 \ \text{AND} \ \neg T5 \ \text{AND} \ \neg T6 \ \text{AND} \ T7) \ )\\
+ \ \text{AND} \ GameStartState
 ```
 
 ### Summary of Logic
@@ -296,8 +304,8 @@ The combined output of Counter A and Counter B forms an 8-bit BCD value represen
 
 The 8-bit BCD output is sent to BCD-to-7-segment decoders. To control when the timer is displayed, we use tri-state buffers with the following enable condition:
 
-```
-GameStartState AND NOT(GameEndState)
+```math
+GameStartState \ \text{AND} \ \neg GameEndState
 ```
 
 This condition ensures the timer is displayed only when the game is active (i.e., when it has started but not yet ended).
@@ -312,7 +320,7 @@ The player score is displayed using a similar structure to the timer, with a few
 
 **AddScore:**
 - The AddScore signal becomes active (1) whenever the player successfully clears a complete row of lights.
-- Further details about this signal are provided in the [Gaining Score](#gaining-score) section.
+- Further details about this signal are provided in the [Score Calculation and Row Clearing Mechanism](#score-calculation-and-row-clearing-mechanism) section.
 
 **Operation:**
 - Counter A increments each time it receives an AddScore pulse.
@@ -321,8 +329,8 @@ The player score is displayed using a similar structure to the timer, with a few
 **Output and Display:**
 - The combined output of Counter A and Counter B forms the 8-bit BCD (Binary-Coded Decimal) score value.
 - This output is sent to the BCD-to-7-segment decoders, which are controlled by tri-state buffers. The enable condition for these buffers is the same as that for the timer: 
-```
-GameStartState AND NOT(GameEndState)
+```math
+GameStartState \ \text{AND}  \ \neg GameEndState
 ```
 This ensures a clear and logical display of the game timer and player score.
 
@@ -351,16 +359,87 @@ These conditions ensure that blocks are created only when the game is active and
 **Block Shape Selection:**
 
 The 3 most significant bits (MSBs) of the LFSR output are used as a selector for an 8-to-1 multiplexer. This multiplexer has 8 inputs, each representing one of the predefined 3x3 block shapes, as follows:
-
-1. 010 111 010  
-2. 100 100 100  
-3. 000 001 111  
-4. 000 110 011  
-5. 000 111 100  
-6. 000 111 010  
-7. 000 101 111  
-8. 000 010 111  
-
+```math
+S1: \ 010 \ 111 \ 010 \\
+S2: \ 100 \ 100 \ 100 \\  
+S3: \ 000 \ 001 \ 111 \\ 
+S4: \ 000 \ 110 \ 011 \\  
+S5: \ 000 \ 111 \ 100 \\  
+S6: \ 000 \ 111 \ 010 \\ 
+S7: \ 000 \ 101 \ 111 \\  
+S8: \ 000 \ 010 \ 111 \\
+---------------
+\\
+S1 =
+\begin{matrix}
+0 & 1 & 0 \\
+1 & 1 & 1 \\
+0 & 1 & 0 \\
+\end{matrix}
+\\
+---------------
+\\
+S2 =
+\begin{matrix}
+1 & 0 & 0 \\
+1 & 0 & 0 \\
+1 & 0 & 0 \\
+\end{matrix}
+\\
+---------------
+\\
+S3 =
+\begin{matrix}
+0 & 0 & 0 \\
+0 & 0 & 1 \\
+1 & 1 & 1 \\
+\end{matrix}
+\\
+---------------
+\\
+S4 =
+\begin{matrix}
+0 & 0 & 0 \\
+1 & 1 & 0 \\
+0 & 1 & 1 \\
+\end{matrix}
+\\
+---------------
+\\
+S5 =
+\begin{matrix}
+0 & 0 & 0 \\
+1 & 1 & 1 \\
+1 & 0 & 0 \\
+\end{matrix}
+\\
+---------------
+\\
+S6 =
+\begin{matrix}
+0 & 0 & 0 \\
+1 & 1 & 1 \\
+0 & 1 & 0 \\
+\end{matrix}
+\\
+---------------
+\\
+S7 =
+\begin{matrix}
+0 & 0 & 0 \\
+1 & 0 & 1 \\
+1 & 1 & 1 \\
+\end{matrix}
+\\
+---------------
+\\
+S8 =
+\begin{matrix}
+0 & 0 & 0 \\
+0 & 1 & 0 \\
+1 & 1 & 1 \\
+\end{matrix}
+```
 Each shape is represented by 9 bits (3 bits per row). The output of the multiplexer (9 bits) is stored in variables: `SHAPE0`, `SHAPE1`, ..., `SHAPE8`.
 
 ![3x3_generate_block](resources/3x3_generate_block.png)
@@ -411,7 +490,7 @@ Each of the top three rows is managed by a separate 7-bit shift register. When a
 
 The shift registers move their bits to the left or right. 
 
-The shift operation is clocked by the OR combination of S_Right, S_Left, Rotate, and CreationCondition signals.
+The shift operation is clocked by the OR combination of `S_Right`, `S_Left`, `Rotate`, and `CreationCondition` signals.
 
 The shift direction is determined by the order of temporary light variables as shift register inputs:
 
@@ -429,12 +508,21 @@ To ensure that a block does not shift out of bounds:
 Both conditions are combined using an AND operation with the shift signals before execution. Additionally, shifts are allowed only while the ControlCondition signal is active, which means they can only occur within the three-second control window. So The previous output will be combined with **ControlCondition** using an AND operation.
 
 **Shift Registers Clock Signal:**
+```math
+(S_\text{Left} \ \text{AND} \ (R_{0,0} \ \text{NOR} \ R_{1,0} \ \text{NOR} \ R_{2,0}) \ \text{AND} \ ControlCondition)
+\ \text{OR} \\
+(S_{\text{Right}} \ \text{AND} \ (R_{0,6} \ \text{NOR} \ R_{1,6} \ \text{NOR} \ R_{2,6}) \ \text{AND} \ ControlCondition)
+\ \text{OR} \\
+(Rotate \ \text{AND} \ ControlCondition)
+\ \text{OR} \\ CreationCondition
+\\
 ```
-(S_Left AND (L0-0 NOR L1-0 NOR L2-0) AND ControlCondition) OR 
-(S_Right AND (L0-6 NOR L1-6 NOR L2-6) AND ControlCondition) OR
-(Rotate AND ControlCondition) OR
-CreationCondition
+```math
+\\
+\text{which [}R_{0,0}-R_{1,0}-R_{2,0}\text{] are red lights in the first column and }\\ \text{[}R_{0,6}-R_{1,6}-R_{2,6}\text{] are red lights in the last column.}
 ```
+
+
 ### Rotation Implementation
 
 Blocks can rotate counterclockwise in four states:
@@ -450,18 +538,22 @@ A 2-to-4 decoder maps the counter value to one of four 9-bit tri-state buffers, 
 
 **Initial Shape (0°):**
 
-```
-1 2 3
-4 5 6
-7 8 9
+```math
+\begin{matrix}
+1 & 2 & 3 \\
+4 & 5 & 6 \\
+7 & 8 & 9 \\
+\end{matrix}
 ```
 
 **After 90° Counterclockwise Rotation:**
 
-```
-3 6 9
-2 5 8
-1 4 7
+```math
+\begin{matrix}
+3 & 6 & 9 \\
+2 & 5 & 8 \\
+1 & 4 & 7 \\
+\end{matrix}
 ```
 
 Each further 90° rotation applies the same transformation. The new rotated shape is stored in temporary variables before being loaded into shift registers, ensuring seamless display updates.
@@ -530,13 +622,13 @@ These shift registers operate with a 1Hz clock, meaning the block moves down onc
 
 The load signal is activated when the following conditions are met:
 
-- GameStartState = 1 (Game is running)
-- NOT(GameEndState) = 1 (Game is not over)
-- ControlCondition = 1 (Block is still in the control phase)
+- GameStartState = 1 **(Game is running)**
+- NOT(GameEndState) = 1 **(Game is not over)**
+- ControlCondition = 1 **(Block is still in the control phase)**
 
 However, the Output Enable (OE) is set to NOT(ControlCondition), which means the transferred data remains hidden until the block is finalized. 
 
-When ControlCondition switches to 0:
+**When ControlCondition switches to 0:**
 
 - The Load signal is deactivated.
 - The shift registers become active, and the block starts moving downward at each clock pulse.
@@ -578,17 +670,17 @@ When either of these conditions is met, all parts of the block transition from *
 
 To simplify the collision logic, we first assume that **each moving light is independent** and doesn't belong to a block group. That means each individual light will turn into a fixed block only when it **personally collides** with something below it.
 
-### **Detecting Collision for Rows 3-9**
+### **Detecting Collision for Rows 3 to 9**
 A collision is detected by **AND-ing the Yellow (Y) value of the current light** with the **Blue (B) value of the light directly below it**:
 
 ```math
-\text{Collision Condition} = Y(i, j) \ AND \ B(i+1, j)
+\text{Collision Condition} = Y(i, j) \ \text{AND} \ B(i+1, j)
 ```
 
 For example, in **row 4, column 0**, the collision condition is:
 
 ```math
-Y3-0 \ AND \ B4-0
+Y(3,0) \ \text{AND} \ B(4,0)
 ```
 
 If this condition evaluates to **1**, the light must become part of the static grid.
@@ -597,7 +689,7 @@ If this condition evaluates to **1**, the light must become part of the static g
 For the bottom row (row 10), there's no row below to check. Instead, we consider a light to have **collided when it simply exists**:
 
 ```math
-Y_{9,j} \ AND \ 1
+Y(9,j) \ \text{AND} \ 1
 ```
 
 Since AND with 1 does not change the value, this means **any Yellow light in row 10 automatically triggers a collision.**
@@ -616,13 +708,13 @@ Once a collision is detected, we must shift the **Y value** into **B** on the ne
 To achieve this:
 
 ```math
-\text{HOLD}(i, j) = \text{NOT} (\text{Collision Condition}(i, j))
+\text{HOLD}(i, j) = \neg[\text{Collision Condition}(i, j)]
 ```
 
 That means:
 
 - **If there is no collision** → HOLD remains **1**, allowing the block to keep shifting down.
-- **If a collision occurs** → HOLD becomes **0**, causing Y to be copied into B, effectively "freezing" the light.
+- **If a collision occurs** → HOLD becomes **0**, causing Y to be shifted into B, effectively "freezing" the light.
 
 > [!NOTE]
 >
@@ -677,7 +769,7 @@ Previously, the **collision condition only checked individual lights**. Now, we 
 For a light at **(i, j)**:
 
 ```math
-\text{Block Collision Condition} = \neg B(i-1, j) \ AND \ \text{Collision Occurred in Rows (i-2 to i+2)}
+\text{Block Collision Condition} = \neg B(i, j) \ \text{AND} \ [\text{Collision Occurred in Rows (i-2 to i+2)}]
 ```
 
 If we use:
@@ -686,13 +778,13 @@ PIS(i, j)
 ```
 to denote **the independent collision condition** at (i, j). and
 ```math
-PIS\text{ROW}_{i-2 \text{ to } i+2}
+PISROW(i-2 \text{ to } i+2)
 ```
-to denote **if any collision happened in rows** [i-2, i+2].
+to denote **if any collision happened in rows** (i-2 to i+2).
 
 Then:
 ```math
-\text{Final Collision Condition or IS}(i, j) = \neg B(i, j) \ AND \ PIS\text{ROW}_{i-2 \text{ to } i+2}
+\text{Final Collision Condition or IS}(i, j) = \neg B(i, j) \ \text{AND} \ PISROW(i-2 \text{ to } i+2)
 ```
 
 This ensures that:
@@ -719,20 +811,20 @@ Each shift register should only load new data if:
 Mathematically:
 
 ```math
-\text{Load Condition}(i, j) = \neg B(i, j) \ AND \ \neg B(i-1, j) \ AND \ \neg \text{IS}(i, j)
+\text{Load Condition}(i, j) = \neg B(i, j) \ \text{AND} \ \neg B(i-1, j) \ \text{AND} \ \neg IS(i, j)
 ```
 
 **Example:**
 For **row 5, column 2 (Light4-1)**:
 
 ```math
-\neg B(4,1) \ AND \ \neg B(3,1) \ AND \ \neg \text{IS}(4,1)
+\neg B(4,1) \ \text{AND} \ \neg B(3,1) \ \text{AND} \ \neg IS(4,1)
 ```
 
 For row **4**, there’s no light above it that can be static, so as an example for **row 4, column 6** we simplify:
 
 ```math
-\neg B(3,5) \ AND \ \neg \text{IS}(3,5)
+\neg B(3,5) \ \text{AND} \ \neg IS(3,5)
 ```
 
 This ensures:
@@ -744,23 +836,241 @@ This ensures:
 
 > [!NOTE]
 >
-> Since we already negated IS through NAND gate, so we don't negate it again during load condition check.
+> Since we already negated the 'IS' signal through the NAND gate, we do not negate it again during the load condition check.
 >
 
 ---
 
 ### **Supplementary Information**
 
-The variables **indices all begin from 0** thats why index of a light in row 4, column 3 would be L3-2.
+The variables **indices all begin from 0** thats why index of a light in row 4, column 3 would be L(3,2).
 
-LForce variables will be introduced in [Gaining Score](#gaining-score) section which forces load condition to be true.
+LXFORCE variables will be introduced in [Score Calculation and Row Clearing Mechanism](#score-calculation-and-row-clearing-mechanism) section which forces load condition to be true.
 
 While the **simple row-freezing method** was used for quick implementation, a **block ID-based method** would be better for a long-term solution. The main **downside** of the current approach is that it **relies on block size assumptions** (3×3), hence limiting flexibility.
 
 
-That said, given the constraints, this method **works well for meeting the deadline** and maintaining correct gameplay behavior. 🚀
+That said, given the constraints, this method **worked well for meeting the deadline** and maintaining correct gameplay behavior. 🚀
 
-## Gaining Score
+## Score Calculation and Row Clearing Mechanism
+
+This section explains the **scoring system and row clearing mechanism** in the game, detailing how a **full row is detected, blinked, deleted, and how upper rows shift down accordingly.** It also explains the logic behind score incrementing after a row is cleared.  
+
+### **Step 1: Detecting and Blinking Full Rows Before Deletiion**
+
+A row is considered **full** when all its lights are **Blue (Fixed Blocks)**. This check applies to **rows 4 to 10**.  
+
+- When a row is full, it begins **blinking for 2 seconds** before being deleted.
+- During this **blinking phase**, all the blocks in that row toggle between **on and off states**.
+- After **2 seconds**, the entire row is removed, and **all rows above it shift down by one row**, including fixed blocks.
+
+To define the **blinking condition** for a row, we use the following approach:
+
+1. **Check if the row is full:**  
+   - **AND all 7 B values** (Fixed Blocks) of that row.  
+   - If the result is `1`, the row is full, and blinking starts.
+
+2. **Toggling the Output Enable (OE) signal** of shift registers:  
+   - The OE input of the shift register toggles between `0` and `1`.  
+   - This makes the **B values of that row toggle between `1` and undefined**, creating the blinking effect.
+
+3. **Storing the Blink Condition:**  
+   - Each row (4-10) requires a register to store its blinking condition.  
+   - The register loads the blinking condition when the row is detected as full.  
+   - After 2 seconds, this condition is cleared to allow row deletion.
+
+Thus, **seven registers** (`BLINKROW3` to `BLINKROW9`) are defined, one for each row from 4 to 10.  
+
+- **Load Input of Each Register:** AND of all **B values** in that row.  
+- **Reset Input:** Activated **after 2 seconds of blinking**, which is explained later.  
+
+![blinkrow](resources/blinkrow.PNG)
+
+---
+
+### **Step 2: Generating the Blinking Signal for Rows**  
+
+The **Output Enable (OE) input** of the shift registers for each row is controlled using **ENROW3...ENROW9** signals.  
+
+**Blinking Logic:**
+1. **Use a 2 Hz clock pulse** (i.e., toggles every 0.5s).  
+2. **NAND this clock signal with BLINKROWX** (the blinking flag for that row).  
+3. **AND the result with ``GameStartState`` & NOT(``GameEndState``).**  
+
+### **Why NAND?**
+- When `BLINKROWX = 0`, the **NAND output is always `1`**, keeping the row visible.  
+- When `BLINKROWX = 1`, the **NAND output toggles with the clock pulse**, causing a blinking effect.
+
+### **Truth Table for ENROWX (Blinking Signal Generation)**  
+
+| BLINKROWX | Clock Pulse (2Hz) | NAND Output | ENROWX |
+|-----------|-------------------|-------------|--------|
+| 0         | 0                 | 1           | 1      |
+| 0         | 1                 | 1           | 1      |
+| 1         | 0                 | 1           | 1      |
+| 1         | 1                 | 0           | 0      |
+
+- **When `BLINKROWX = 0`**, row is always visible.  
+- **When `BLINKROWX = 1`**, row toggles visibility at 2 Hz, making it blink.
+
+![ENROW](resources/ENRow.PNG)
+
+---
+
+### **Step 3: Controlling the Blinking Duration (2 Seconds Limit)**  
+
+- The **blinking should last exactly 2 seconds**.
+- We use a **3-bit counter** to track this duration.
+- The counter starts counting **whenever any row starts blinking**.
+- The counter **resets after 2 seconds**, stopping the blinking.
+
+### **Counter Configuration**
+- **Clock Enable (CE) Input:**  
+  - **OR of all `BLINKROW3...BLINKROW9`** signals.  
+  - If any row is blinking, the counter starts.
+
+- **Counter Operation:**  
+  - After **1 second**, a signal `StopBlink = 1`.  
+  - After **2 seconds**, the counter resets (`StopBlink = 0`).  
+
+### **StopBlink Calculation**
+If `C0, C1, C2` are the **3-bit counter outputs** from least to most significant bit:
+
+```math
+\text{StopBlink} = C0 \ \text{AND} \ \neg{C1} \ \text{AND} \ \neg{C2}
+```
+
+- `StopBlink = 1` after **1 second** of blinking.  
+- `StopBlink = 0` after **2 seconds** (counter resets).  
+
+### **Counter Reset Logic**
+- **Reset Input:** `StopBlink`
+- When `StopBlink = 1`, on the next **counter clock cycle (1Hz)**, the counter loads `000`, effectively resetting.
+
+---
+
+### **Step 4: Define And Store Row Full Condition**  
+
+Once `StopBlink = 1`, full row **must be deleted**.  
+
+To store full row conditions, we define **seven new registers:**  
+- `ROW3FULL ... ROW9FULL`  
+- These store which row was **full before deletion**.
+
+### **Register Behavior**
+- **Load Input:** `BLINKROW3...BLINKROW9`
+- **Load Condition:** `StopBlink = 1` (asynchronous)
+- **Reset Condition:**  
+  - OR of all `ROW3FULL...ROW9FULL`  
+  - Reset synchronously with **game shift clock (1Hz).**  
+
+This ensures **ROWXFULL stays `1` for exactly 1 game shift cycle** before resetting.
+
+---
+
+### **Step 5: Deleting Full Rows & Shifting Upper Rows Down**  
+
+To **delete full rows** and shift down all rows **above the deleted row**, we define:  
+- `L3FORCE ... L9FORCE`  
+- These force the **loading of shift registers for affected rows**, ensuring they move down.
+
+### **Force Load Logic**
+- **When `ROWXFULL = 1`, all rows above `X` must shift down.**
+- We define:
+
+```math
+\text{L9FORCE} = ROW9FULL
+\\
+L8FORCE = ROW8FULL \ \text{OR} \ ROW9FULL = ROW8FULL \ \text{OR} \ L9FORCE
+\\
+L7FORCE = ROW7FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW7FULL \ \text{OR} \ L8FORCE
+\\
+L6FORCE = ROW6FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW6FULL \ \text{OR} \ L7FORCE
+\\
+L5FORCE = ROW5FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW5FULL \ \text{OR} \ L6FORCE
+\\
+L4FORCE = ROW4FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW4FULL \ \text{OR} \ L5FORCE
+\\
+L3FORCE = ROW3FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW3FULL \ \text{OR} \ L4FORCE
+
+```
+
+![LFORCE](resources/LForce.PNG)
+
+### **5.1 Understanding the Row Deletion Process**
+When a row (let’s say row X) is completely filled, all its lamps have **B = 1** (indicating they are active). The deletion process must:
+- **Shift all rows above it downward by one row**, including both **fixed lamps** and moving ones.
+- Ensure that the **previous state of row X does not remain** after shift. (**Overwrite lamps** in row X with the row above it.)
+
+To achieve this, the **shift register loading condition** is carefully designed.
+
+Each row in the system has a **shift register** responsible for storing its lamp states. The loading condition of each row's shift register determines **whether it updates based on the previous row or retains its current state**.
+
+> [!NOTE]
+>
+> For additional info on how load condition is determined check out [Shift Registers Load Condition](#step-5-updating-load-conditions).
+>
+- Normally, a row loads its new values from the row above it **only if certain conditions are met**.
+- However, when a row is **completely filled and needs to be deleted**, all of its lamps have **B = 1**.  
+  - This causes the **shift register loading condition** of that row and the row below to be **false (0)**, meaning that row and the row below it will **not copy any values from the row above it** and will hold its current state.
+  - As a result, all rows **above the full row shift down by one position**.
+  - Since the **row below the full row is prevented from loading data**, it holds its current state instead of incorrectly inheriting values from the full row.
+  - To finalize the deletion, **we force-load the shift registers of the full row** with the values from the row above it.
+- This effectively **pushes all upper rows down** by one step.
+- The full row is **overwritten and disappears**.
+
+Thus, all shift registers for **the full row and rows above the full row** are **loaded unconditionally** on the next shift clock, **bypassing normal conditions** and ensuring a correct downward shift.
+
+![row_deletion_and_add_score](resources/row_deletion_and_add_score.gif)
+
+### **5.2 Handling Multiple Full Rows (Priority Encoder & Decoder Mechanism)**  
+
+When multiple rows are full at the same time, the system must determine **which row to blink and delete first**. To enforce an **orderly deletion process**, we use a **priority encoder** and a **decoder**.
+
+#### **Priority Encoder (8-to-3)**
+- The priority encoder **detects the highest-numbered (deepest) full row** and assigns it the highest priority.
+- It takes **seven inputs** (`ROW3FULL` to `ROW9FULL`), each representing whether a row is full.
+- The **output is a 3-bit code**, identifying the highest-number full row.
+
+#### **Decoder (3-to-8)**
+- The **3-bit output** of the priority encoder is fed into a **3-to-8 decoder**.
+- The decoder converts this back into **one-hot format**, activating only the corresponding row’s **BLINKROW** signal (`BLINKROW3` to `BLINKROW9`).
+- The **highest-numbered full row** is now the only one that blinks, ensuring orderly deletion.
+
+> [!NOTE] 
+>
+> The **first output of the decoder (least significant bit)** corresponds to **"no row is full"**. We ignore this signal.
+The remaining **seven outputs** control the **blinking process** for `BLINKROW3` to `BLINKROW9`.
+>
+
+![blinkrow_rowxfull_addscore_schematic](resources/blinkrow_rowxfull_addscore_schematic.PNG)
+
+
+---
+
+### **Step 6: Adding Score After Row Deletion**  
+
+To count the score:
+- A **D Flip-Flop** with **rising edge trigger** and **asynchronous reset** is used.
+- **Clock Input:** `NOR(ROW3FULL...ROW9FULL)`.  
+- **Output:** `AddScore` (acts as clock for the [score counter](#player-score)).
+
+#### **Reset Logic**
+- **Reset when:**  
+  - Game hasn't started (`GameStartState = 0`).  
+  - Game is over (`GameEndState = 1`).  
+  - `AddScore` is already `1`.
+  ```math
+  \text{DFF Reset} = AddScore \ \text{OR} \ ( GameStartState \ \text{NAND} \ \neg{GameEndState})  
+  ```
+
+#### **Score Incrementation**
+- **At game start, the NOR output is `1`.**  
+- **When a row gets deleted, `NOR(ROWXFULL) = 0` (falling edge)**.  
+- **As soon as ROWXFULL resets (`0 → 1`), NOR becomes `1` again, creating a rising edge.**  
+- This **rising edge** triggers `AddScore`, **increasing the player's score**.
+
+![addscore](resources/addscore.PNG)
 
 ## Fullboard Condition
 
