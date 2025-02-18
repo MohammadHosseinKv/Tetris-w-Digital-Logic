@@ -69,8 +69,13 @@ As rows are completed, they will flash for two seconds before being cleared, cau
       - [5.1 Understanding the Row Deletion Process](#51-understanding-the-row-deletion-process)
       - [5.2 Handling Multiple Full Rows (Priority Encoder & Decoder Mechanism)](#52-handling-multiple-full-rows-priority-encoder--decoder-mechanism)
     - [Step 6: Adding Score After Row Deletion](#step-6-adding-score-after-row-deletion)
-  - [Fullboard Condition](#fullboard-condition)
+  - [Full Board Condition](#full-board-condition)
+    - [Step 1: Collision Detection in Row 4](#step-1-collision-detection-in-row-4)
+    - [Step 2: Collision Detection in Rows 5 and 6](#step-2-collision-detection-in-rows-5-and-6)
+    - [Step 3: Combining the Conditions and Game Termination Logic](#step-3-combining-the-conditions-and-game-termination-logic)
   - [Notes](#notes)
+    - [Timing Considerations in the Schematic](#timing-considerations-in-the-schematic)
+    - [Rotation Issue](#rotation-issue)
 - [Installation](#installation)
 - [Running the Game](#running-the-game)
 - [Resources](#resources)
@@ -228,7 +233,7 @@ If a newly generated 3x3 block collides with a fixed block and cannot completely
 
 When **FullBoard** equals 1, the **LoseGame** signal is triggered, which sets **GameLost** to 1 and ends the game. 
 
-Details on how **FullBoard** is determined can be found in the [FullBoard Condition](#fullboard-condition) section.
+Details on how **FullBoard** is determined can be found in the [Full Board Condition](#full-board-condition) section.
 
 ### Timer Reaches 99 Seconds
 
@@ -1086,9 +1091,172 @@ To count the score:
 
 ![addscore](resources/addscore.PNG)
 
-## Fullboard Condition
+## Full Board Condition
+
+The **Full Board Condition** occurs when a newly generated block collides with a fixed block in the first three rows and fails to exit them. If this condition is met, the game ends, and the player loses.  
+
+To implement this condition, a systematic approach is taken to detect collisions within the top three rows and determine whether the generated block is unable to move beyond them. The detection mechanism is based on verifying whether a collision has occurred in rows **4, 5, or 6**, which would prevent the block from fully exiting the first three rows.
+
+---
+
+### **Step 1: Collision Detection in Row 4**  
+
+To check for a collision in row 4, a column-wise detection method is utilized. Each column consists of multiple lamps, where the state of the lamps in the first three rows is represented by **R**, and the fixed blocks in row 4 are represented by **B**.  
+
+The detection process involves the following steps:  
+
+1. **Logical AND Operation**  
+   - For each column, the value of **R** in the first three rows is **AND-ed** with the value of **B** in row 4.  
+   - This operation determines whether an active lamp in the top three rows aligns with an already fixed block in row 4.  
+
+2. **Ensuring the Block is in Motion**  
+   - The result of the previous step is further **AND-ed** with the **NOR of CreationCondition and ControlCondition**.  
+   - This ensures that the block is currently in motion and is neither in the process of being generated nor under external control.  
+
+3. **Aggregating Results Across All Columns**  
+   - The outputs of these operations across all **seven columns** are combined using a **logical OR operation**.  
+   - If any of the columns produce a **true** value, a collision in row 4 is confirmed.  
+
+The resulting Boolean equation for detecting a collision in row 4 is given by:
+
+```math
+\begin{gather*}
+\Big((R_{2,0} \ \text{AND} \ B_{3,0}) \ \text{OR} \ (R_{2,1} \ \text{AND} \ B_{3,1}) \ \text{OR} \ (R_{2,2} \ \text{AND} \ B_{3,2}) \ \text{OR} \\
+(R_{2,3} \ \text{AND} \ B_{3,3}) \ \text{OR} \ (R_{2,4} \ \text{AND} \ B_{3,4}) \ \text{OR} \ (R_{2,5} \ \text{AND} \ B_{3,5}) \ \text{OR} \\
+(R_{2,6} \ \text{AND} \ B_{3,6})\Big) \ \text{AND} \ (CreationCondition \ \text{NOR} \  ControlCondition)
+\end{gather*}
+```
+
+This equation ensures that any collision in row 4 is detected and flagged as part of the **Full Board Condition**.
+
+---
+
+### **Step 2: Collision Detection in Rows 5 and 6**  
+
+For detecting collisions in rows 5 and 6, a different approach is employed. Instead of checking direct **R-B** collisions, the **Inner Shift (IS) variables** are utilized. These variables indicate whether a collision has occurred within a **2-row radius** of a lamp.  
+
+1. **Using Inner Shift (IS) for Collision Detection**  
+   - The **IS** variables provide a mechanism to detect potential collisions that extend beyond row 4.  
+   - The values of **IS** for row 4 and row 5 are examined to identify if the generated block is encountering an obstruction.  
+
+2. **Preventing False Positives from Row 7 Collisions**  
+   - If a collision occurs in row 7, it can incorrectly set the **IS** values for rows 5 and 6, leading to a false detection.  
+   - To avoid this issue, it is necessary to verify that the generated block is still within the **first three rows**.  
+   - Additionally, the **Control Condition** must be **0** to ensure that the block is actively moving.  
+
+3. **Ensuring Row 6 Detection is Valid**  
+   - An additional requirement is introduced for row 6: at least **one lamp in row 4 must be active** to confirm a valid collision.  
+   - This prevents a scenario where a new block has formed in row 8, but an old block remains in row 5, leading to incorrect detection.  
+
+The Boolean equation for collision detection in rows 5 and 6 is structured as follows:  
+
+```math
+\begin{gather*}
+(IS_{3,0} \ \text{NAND} \ IS_{3,1} \ \text{NAND} \ IS_{3,2} \ \text{NAND} \ IS_{3,3} \ \text{NAND} \\
+IS_{3,4} \ \text{NAND} \ IS_{3,5} \ \text{NAND} \ IS_{3,6} \ \text{NAND} \ IS_{4,0} \ \text{NAND} \\
+IS_{4,1} \ \text{NAND} \ IS_{4,2} \ \text{NAND} \ IS_{4,3} \ \text{NAND} \ IS_{4,4} \text{NAND} \\
+IS_{4,5} \ \text{NAND} \ IS_{4,6}) \ \text{AND} \ (Y_{3,0} \ \text{OR} \ Y_{3,1} \ \text{OR} \\
+Y_{3,2} \ \text{OR} \ Y_{3,3} \ \text{OR} \ Y_{3,4} \ \text{OR} \ Y_{3,5} \ \text{OR} \ Y_{3,6})
+\end{gather*}
+``` 
+
+This equation ensures that a valid collision is detected in rows 5 and 6 only when the generated block remains in the first three rows and is actively moving.
+
+---
+
+### **Step 3: Combining the Conditions and Game Termination Logic**  
+
+To finalize the Full Board Condition, the results from both collision detection mechanisms are combined and integrated into the game’s logic:  
+
+1. **Combining the Collision Conditions**  
+   - The results from **Step 1 (row 4 collision)** and **Step 2 (row 5 and 6 collisions)** are combined using a **logical OR operation**.  
+   - This ensures that a collision in **either case** is sufficient to trigger the game-over condition.  
+
+2. **Ensuring the Game is Active**  
+   - The combined result is **AND-ed** with **GameStartState** and **NOT(GameEndState)**.  
+   - This ensures that the game-over condition is triggered only when the game is running and has not already ended.  
+
+3. **Storing the Result in a D Flip-Flop (DFF)**  
+   - The final **Full Board Condition** is stored in a **D Flip-Flop**, which is **clocked by the game’s shift clock**.  
+   - This ensures that the condition is evaluated **synchronously** with the game’s progression.  
+
+The final Boolean equation for the Full Board Condition is expressed as:  
+
+```math
+\begin{gather*}
+FullBoard = \Big((\text{Collision in Row 4}) \ \text{OR} \ (\text{Collision in Rows 5 \& 6})\Big) \ \text{AND} \\
+(GameStartState \ \text{AND} \ \neg{GameEndState})
+\end{gather*}
+```
+
+When this condition evaluates to **1**, the game-over state is activated in the next clock cycle, ensuring that the player loses the game as soon as an irreversible collision occurs in the top three rows.
+
+
+![fullboard](resources/fullboard.PNG)
+
+In the implementation, the **Inner Shift (IS) variable** is directly used as the **HOLD input** of each lamp’s shift register. This means that when **IS = 0**, the **Inner Shift operation occurs**, which transitions zero to Y and Y to B value.  
+
+Since **IS is negated by design**, its logic must be carefully considered when detecting collisions in rows **5 and 6**. Instead of using a **logical OR operation** to aggregate collision results across lamps, a **NAND operation** is used.  
+
+### **Reason for Using NAND Instead of OR**
+1. **Default State of IS Variables**  
+   - The **default value** of all IS variables is **1** (meaning no collision is detected).  
+   - When a collision is detected at a particular lamp, its IS variable transitions to **0**.  
+
+2. **Effect on OR and NAND Operations**  
+   - If OR were used to aggregate the collision detection results, it would produce **0** only when **all lamps are in collision**, which is not the desired behavior.  
+   - Instead, using **NAND ensures that a single detected collision (IS = 0 for any lamp) results in a final output of 1**, which correctly signals a collision.  
+
+3. **Consistency with IS Inversion in Shift Registers**  
+   - Since IS is already **inverted in the hardware implementation**, using NAND instead of OR maintains logical consistency.  
+   - This approach prevents unnecessary NOT gates in the circuit, simplifying the design and ensuring efficient collision detection.  
+
+This ensures that **if any IS value becomes 0 (collision detected), the entire NAND operation produces 1**, correctly signaling a collision while maintaining compatibility with the hardware’s use of IS in shift registers.
 
 ## Notes
+
+### **Timing Considerations in the Schematic**  
+Throughout the schematic design of the project, **RegClock** has been used wherever a **short delay** is required. This clock is connected to a **20 Hz signal**, which introduces a delay ranging from a **minimum of approximately 0.001 seconds to a maximum of 0.05 seconds**.  
+
+The purpose of using RegClock is to ensure that sequential operations have sufficient timing margins to execute correctly, preventing **glitches or race conditions** caused by immediate state transitions.  
+
+### **Rotation Issue**  
+
+#### **Problem Overview**  
+For shapes that do not fully occupy a **3×3 grid**, unintended rotations can occur when shifting the shape to the **edge of the board**.  
+
+#### **Example Scenario**  
+Consider the following **vertical 3×1 shape**:  
+
+```
+1 0 0
+1 0 0
+1 0 0
+```
+If this shape is positioned in the **first column (left edge)** and rotated **twice counterclockwise**, it will end up in the **third column (right edge)** as shown below:  
+
+```
+0 0 1
+0 0 1
+0 0 1
+```
+Now, if the shape is shifted **two positions to the left** (back to the first column) and rotated once more, it results in:  
+
+```
+1 1 1
+0 0 0
+0 0 0
+```
+which is **not a proper counterclockwise rotation**.  
+
+#### **Cause of the Issue**  
+- Rotation logic assumes that the **shape remains within a fixed 3×3 grid**.  
+- When a shape is **pushed against a wall** and rotated, the board may attempt to place blocks in **invalid positions**.  
+- Since the shift operation **moves the shape before rotation**, the resulting transformation may **violate expected rotational symmetry**.  
+
+#### **Impact on Gameplay**  
+- This issue **does not cause the game to crash** or become unplayable.  
+- However, it **introduces unexpected rotation behavior** when pieces are placed at the **left or right edges**.  
 
 ## Installation
 
