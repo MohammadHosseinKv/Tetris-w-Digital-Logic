@@ -246,7 +246,7 @@ If this condition evaluates to true, the `LoseGame` signal is triggered, resulti
 The `LoseGame` signal is determined based on the following conditions:
 
 ```math
-LoseGame = FullBoard \ \text{OR} \\ ( \ (T0 \ \text{AND} \ \neg T1 \ \text{AND} \ \neg T2 \ \text{AND} \ T3) \ \text{AND} \ (T4 \ \text{AND} \ \neg T5 \ \text{AND} \ \neg T6 \ \text{AND} \ T7) \ )
+LoseGame = FullBoard \ \text{OR} \\\\ ( \ (T0 \ \text{AND} \ \neg T1 \ \text{AND} \ \neg T2 \ \text{AND} \ T3) \ \text{AND} \ (T4 \ \text{AND} \ \neg T5 \ \text{AND} \ \neg T6 \ \text{AND} \ T7) \ )
 
 ```
 
@@ -255,7 +255,7 @@ This means the game will be marked as lost if either the board is full or the ti
 To ensure these loss conditions only apply after the game has started, we finalize the `LoseGame` condition by ANDing it with the `GameStartState`:
 
 ```math
-LoseGame = FullBoard \ \text{OR} \\ ( \ (T0 \ \text{AND} \ \neg T1 \ \text{AND} \ \neg T2 \ \text{AND} \ T3) \ \text{AND} \ (T4 \ \text{AND} \ \neg T5 \ \text{AND} \ \neg T6 \ \text{AND} \ T7) \ )\\
+LoseGame = FullBoard \ \text{OR} \\\\ ( \ (T0 \ \text{AND} \ \neg T1 \ \text{AND} \ \neg T2 \ \text{AND} \ T3) \ \text{AND} \ (T4 \ \text{AND} \ \neg T5 \ \text{AND} \ \neg T6 \ \text{AND} \ T7) \ )\\\\
  \ \text{AND} \ GameStartState
 ```
 
@@ -360,84 +360,84 @@ These conditions ensure that blocks are created only when the game is active and
 
 The 3 most significant bits (MSBs) of the LFSR output are used as a selector for an 8-to-1 multiplexer. This multiplexer has 8 inputs, each representing one of the predefined 3x3 block shapes, as follows:
 ```math
-S1: \ 010 \ 111 \ 010 \\
-S2: \ 100 \ 100 \ 100 \\  
-S3: \ 000 \ 001 \ 111 \\ 
-S4: \ 000 \ 110 \ 011 \\  
-S5: \ 000 \ 111 \ 100 \\  
-S6: \ 000 \ 111 \ 010 \\ 
-S7: \ 000 \ 101 \ 111 \\  
-S8: \ 000 \ 010 \ 111 \\
+S1: \ 010 \ 111 \ 010 \\\\
+S2: \ 100 \ 100 \ 100 \\\\  
+S3: \ 000 \ 001 \ 111 \\\\ 
+S4: \ 000 \ 110 \ 011 \\\\  
+S5: \ 000 \ 111 \ 100 \\\\  
+S6: \ 000 \ 111 \ 010 \\\\ 
+S7: \ 000 \ 101 \ 111 \\\\  
+S8: \ 000 \ 010 \ 111 \\\\
 ---------------
-\\
+\\\\
 S1 =
 \begin{matrix}
-0 & 1 & 0 \\
-1 & 1 & 1 \\
-0 & 1 & 0 \\
+0 & 1 & 0 \\\\
+1 & 1 & 1 \\\\
+0 & 1 & 0 \\\\
 \end{matrix}
-\\
+\\\\
 ---------------
-\\
+\\\\
 S2 =
 \begin{matrix}
-1 & 0 & 0 \\
-1 & 0 & 0 \\
-1 & 0 & 0 \\
+1 & 0 & 0 \\\\
+1 & 0 & 0 \\\\
+1 & 0 & 0 \\\\
 \end{matrix}
-\\
+\\\\
 ---------------
-\\
+\\\\
 S3 =
 \begin{matrix}
-0 & 0 & 0 \\
-0 & 0 & 1 \\
-1 & 1 & 1 \\
+0 & 0 & 0 \\\\
+0 & 0 & 1 \\\\
+1 & 1 & 1 \\\\
 \end{matrix}
-\\
+\\\\
 ---------------
-\\
+\\\\
 S4 =
 \begin{matrix}
-0 & 0 & 0 \\
-1 & 1 & 0 \\
-0 & 1 & 1 \\
+0 & 0 & 0 \\\\
+1 & 1 & 0 \\\\
+0 & 1 & 1 \\\\
 \end{matrix}
-\\
+\\\\
 ---------------
-\\
+\\\\
 S5 =
 \begin{matrix}
-0 & 0 & 0 \\
-1 & 1 & 1 \\
-1 & 0 & 0 \\
+0 & 0 & 0 \\\\
+1 & 1 & 1 \\\\
+1 & 0 & 0 \\\\
 \end{matrix}
-\\
+\\\\
 ---------------
-\\
+\\\\
 S6 =
 \begin{matrix}
-0 & 0 & 0 \\
-1 & 1 & 1 \\
-0 & 1 & 0 \\
+0 & 0 & 0 \\\\
+1 & 1 & 1 \\\\
+0 & 1 & 0 \\\\
 \end{matrix}
-\\
+\\\\
 ---------------
-\\
+\\\\
 S7 =
 \begin{matrix}
-0 & 0 & 0 \\
-1 & 0 & 1 \\
-1 & 1 & 1 \\
+0 & 0 & 0 \\\\
+1 & 0 & 1 \\\\
+1 & 1 & 1 \\\\
 \end{matrix}
-\\
+\\\\
 ---------------
-\\
+\\\\
 S8 =
 \begin{matrix}
-0 & 0 & 0 \\
-0 & 1 & 0 \\
-1 & 1 & 1 \\
+0 & 0 & 0 \\\\
+0 & 1 & 0 \\\\
+1 & 1 & 1 \\\\
 \end{matrix}
 ```
 Each shape is represented by 9 bits (3 bits per row). The output of the multiplexer (9 bits) is stored in variables: `SHAPE0`, `SHAPE1`, ..., `SHAPE8`.
@@ -510,16 +510,16 @@ Both conditions are combined using an AND operation with the shift signals befor
 **Shift Registers Clock Signal:**
 ```math
 (S_\text{Left} \ \text{AND} \ (R_{0,0} \ \text{NOR} \ R_{1,0} \ \text{NOR} \ R_{2,0}) \ \text{AND} \ ControlCondition)
-\ \text{OR} \\
+\ \text{OR} \\\\
 (S_{\text{Right}} \ \text{AND} \ (R_{0,6} \ \text{NOR} \ R_{1,6} \ \text{NOR} \ R_{2,6}) \ \text{AND} \ ControlCondition)
-\ \text{OR} \\
+\ \text{OR} \\\\
 (Rotate \ \text{AND} \ ControlCondition)
-\ \text{OR} \\ CreationCondition
-\\
+\ \text{OR} \\\\ CreationCondition
+\\\\
 ```
 ```math
-\\
-\text{which [}R_{0,0}-R_{1,0}-R_{2,0}\text{] are red lights in the first column and }\\ \text{[}R_{0,6}-R_{1,6}-R_{2,6}\text{] are red lights in the last column.}
+\\\\
+\text{which [}R_{0,0}-R_{1,0}-R_{2,0}\text{] are red lights in the first column and }\\\\ \text{[}R_{0,6}-R_{1,6}-R_{2,6}\text{] are red lights in the last column.}
 ```
 
 
@@ -540,9 +540,9 @@ A 2-to-4 decoder maps the counter value to one of four 9-bit tri-state buffers, 
 
 ```math
 \begin{matrix}
-1 & 2 & 3 \\
-4 & 5 & 6 \\
-7 & 8 & 9 \\
+1 & 2 & 3 \\\\
+4 & 5 & 6 \\\\
+7 & 8 & 9 \\\\
 \end{matrix}
 ```
 
@@ -550,9 +550,9 @@ A 2-to-4 decoder maps the counter value to one of four 9-bit tri-state buffers, 
 
 ```math
 \begin{matrix}
-3 & 6 & 9 \\
-2 & 5 & 8 \\
-1 & 4 & 7 \\
+3 & 6 & 9 \\\\
+2 & 5 & 8 \\\\
+1 & 4 & 7 \\\\
 \end{matrix}
 ```
 
@@ -980,17 +980,17 @@ To **delete full rows** and shift down all rows **above the deleted row**, we de
 
 ```math
 \text{L9FORCE} = ROW9FULL
-\\
+\\\\
 L8FORCE = ROW8FULL \ \text{OR} \ ROW9FULL = ROW8FULL \ \text{OR} \ L9FORCE
-\\
+\\\\
 L7FORCE = ROW7FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW7FULL \ \text{OR} \ L8FORCE
-\\
+\\\\
 L6FORCE = ROW6FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW6FULL \ \text{OR} \ L7FORCE
-\\
+\\\\
 L5FORCE = ROW5FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW5FULL \ \text{OR} \ L6FORCE
-\\
+\\\\
 L4FORCE = ROW4FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW4FULL \ \text{OR} \ L5FORCE
-\\
+\\\\
 L3FORCE = ROW3FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW3FULL \ \text{OR} \ L4FORCE
 
 ```
