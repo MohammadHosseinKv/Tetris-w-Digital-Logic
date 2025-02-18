@@ -246,8 +246,9 @@ If this condition evaluates to true, the `LoseGame` signal is triggered, resulti
 The `LoseGame` signal is determined based on the following conditions:
 
 ```math
-LoseGame = FullBoard \ \text{OR} \\\\ ( \ (T0 \ \text{AND} \ \neg T1 \ \text{AND} \ \neg T2 \ \text{AND} \ T3) \ \text{AND} \ (T4 \ \text{AND} \ \neg T5 \ \text{AND} \ \neg T6 \ \text{AND} \ T7) \ )
-
+\begin{gather*}
+LoseGame = FullBoard \ \text{OR} \\ \Big((T0 \ \text{AND} \ \neg T1 \ \text{AND} \ \neg T2 \ \text{AND} \ T3) \ \text{AND} \ (T4 \ \text{AND} \ \neg T5 \ \text{AND} \ \neg T6 \ \text{AND} \ T7)\Big)
+\end{gather*}
 ```
 
 This means the game will be marked as lost if either the board is full or the timer has reached 99 seconds.
@@ -255,8 +256,12 @@ This means the game will be marked as lost if either the board is full or the ti
 To ensure these loss conditions only apply after the game has started, we finalize the `LoseGame` condition by ANDing it with the `GameStartState`:
 
 ```math
-LoseGame = FullBoard \ \text{OR} \\\\ ( \ (T0 \ \text{AND} \ \neg T1 \ \text{AND} \ \neg T2 \ \text{AND} \ T3) \ \text{AND} \ (T4 \ \text{AND} \ \neg T5 \ \text{AND} \ \neg T6 \ \text{AND} \ T7) \ )\\\\
- \ \text{AND} \ GameStartState
+\begin{gather*}
+  LoseGame = FullBoard \ OR \\
+           \Big( (T0 \ AND \ \neg T1 \ AND \ \neg T2 \ AND \ T3) 
+            \ AND \ (T4 \ AND \ \neg T5 \ AND \ \neg T6 \ AND \ T7) \Big) \\
+            \ AND \ GameStartState
+\end{gather*}
 ```
 
 ### Summary of Logic
@@ -360,6 +365,7 @@ These conditions ensure that blocks are created only when the game is active and
 
 The 3 most significant bits (MSBs) of the LFSR output are used as a selector for an 8-to-1 multiplexer. This multiplexer has 8 inputs, each representing one of the predefined 3x3 block shapes, as follows:
 ```math
+\begin{gather*}
 S1: \ 010 \ 111 \ 010 \\\\
 S2: \ 100 \ 100 \ 100 \\\\  
 S3: \ 000 \ 001 \ 111 \\\\ 
@@ -369,76 +375,77 @@ S6: \ 000 \ 111 \ 010 \\\\
 S7: \ 000 \ 101 \ 111 \\\\  
 S8: \ 000 \ 010 \ 111 \\\\
 ---------------
-\\\\
+\\
 S1 =
 \begin{matrix}
-0 & 1 & 0 \\\\
-1 & 1 & 1 \\\\
-0 & 1 & 0 \\\\
+0 & 1 & 0 \\
+1 & 1 & 1 \\
+0 & 1 & 0 \\
 \end{matrix}
-\\\\
+\\
 ---------------
-\\\\
+\\
 S2 =
 \begin{matrix}
-1 & 0 & 0 \\\\
-1 & 0 & 0 \\\\
-1 & 0 & 0 \\\\
+1 & 0 & 0 \\
+1 & 0 & 0 \\
+1 & 0 & 0 \\
 \end{matrix}
-\\\\
+\\
 ---------------
-\\\\
+\\
 S3 =
 \begin{matrix}
-0 & 0 & 0 \\\\
-0 & 0 & 1 \\\\
-1 & 1 & 1 \\\\
+0 & 0 & 0 \\
+0 & 0 & 1 \\
+1 & 1 & 1 \\
 \end{matrix}
-\\\\
+\\
 ---------------
-\\\\
+\\
 S4 =
 \begin{matrix}
-0 & 0 & 0 \\\\
-1 & 1 & 0 \\\\
-0 & 1 & 1 \\\\
+0 & 0 & 0 \\
+1 & 1 & 0 \\
+0 & 1 & 1 \\
 \end{matrix}
-\\\\
+\\
 ---------------
-\\\\
+\\
 S5 =
 \begin{matrix}
-0 & 0 & 0 \\\\
-1 & 1 & 1 \\\\
-1 & 0 & 0 \\\\
+0 & 0 & 0 \\
+1 & 1 & 1 \\
+1 & 0 & 0 \\
 \end{matrix}
-\\\\
+\\
 ---------------
-\\\\
+\\
 S6 =
 \begin{matrix}
-0 & 0 & 0 \\\\
-1 & 1 & 1 \\\\
-0 & 1 & 0 \\\\
+0 & 0 & 0 \\
+1 & 1 & 1 \\
+0 & 1 & 0 \\
 \end{matrix}
-\\\\
+\\
 ---------------
-\\\\
+\\
 S7 =
 \begin{matrix}
-0 & 0 & 0 \\\\
-1 & 0 & 1 \\\\
-1 & 1 & 1 \\\\
+0 & 0 & 0 \\
+1 & 0 & 1 \\
+1 & 1 & 1 \\
 \end{matrix}
-\\\\
+\\
 ---------------
-\\\\
+\\
 S8 =
 \begin{matrix}
-0 & 0 & 0 \\\\
-0 & 1 & 0 \\\\
-1 & 1 & 1 \\\\
+0 & 0 & 0 \\
+0 & 1 & 0 \\
+1 & 1 & 1 \\
 \end{matrix}
+\end{gather*}
 ```
 Each shape is represented by 9 bits (3 bits per row). The output of the multiplexer (9 bits) is stored in variables: `SHAPE0`, `SHAPE1`, ..., `SHAPE8`.
 
@@ -509,17 +516,17 @@ Both conditions are combined using an AND operation with the shift signals befor
 
 **Shift Registers Clock Signal:**
 ```math
-(S_\text{Left} \ \text{AND} \ (R_{0,0} \ \text{NOR} \ R_{1,0} \ \text{NOR} \ R_{2,0}) \ \text{AND} \ ControlCondition)
-\ \text{OR} \\\\
-(S_{\text{Right}} \ \text{AND} \ (R_{0,6} \ \text{NOR} \ R_{1,6} \ \text{NOR} \ R_{2,6}) \ \text{AND} \ ControlCondition)
-\ \text{OR} \\\\
+\begin{gather*}
+\Big(S_\text{Left} \ \text{AND} \ (R_{0,0} \ \text{NOR} \ R_{1,0} \ \text{NOR} \ R_{2,0}) \ \text{AND} \ ControlCondition)
+\ \text{OR} \\\
+\Big(S_{\text{Right}} \ \text{AND} \ (R_{0,6} \ \text{NOR} \ R_{1,6} \ \text{NOR} \ R_{2,6}) \ \text{AND} \ ControlCondition)
+\ \text{OR} \\
 (Rotate \ \text{AND} \ ControlCondition)
-\ \text{OR} \\\\ CreationCondition
-\\\\
-```
-```math
-\\\\
-\text{which [}R_{0,0}-R_{1,0}-R_{2,0}\text{] are red lights in the first column and }\\\\ \text{[}R_{0,6}-R_{1,6}-R_{2,6}\text{] are red lights in the last column.}
+\ \text{OR} \\ CreationCondition
+\\
+\\
+\text{which [}R_{0,0}-R_{1,0}-R_{2,0}\text{] are red lights in the first column and }\\ \text{[}R_{0,6}-R_{1,6}-R_{2,6}\text{] are red lights in the last column.}
+\end{gather*}
 ```
 
 
@@ -539,21 +546,25 @@ A 2-to-4 decoder maps the counter value to one of four 9-bit tri-state buffers, 
 **Initial Shape (0°):**
 
 ```math
+\begin{gather*}
 \begin{matrix}
 1 & 2 & 3 \\\\
 4 & 5 & 6 \\\\
 7 & 8 & 9 \\\\
 \end{matrix}
+\end{gather*}
 ```
 
 **After 90° Counterclockwise Rotation:**
 
 ```math
+\begin{gather*}
 \begin{matrix}
 3 & 6 & 9 \\\\
 2 & 5 & 8 \\\\
 1 & 4 & 7 \\\\
 \end{matrix}
+\end{gather*}
 ```
 
 Each further 90° rotation applies the same transformation. The new rotated shape is stored in temporary variables before being loaded into shift registers, ensuring seamless display updates.
@@ -903,12 +914,14 @@ The **Output Enable (OE) input** of the shift registers for each row is controll
 
 ### **Truth Table for ENROWX (Blinking Signal Generation)**  
 
-| BLINKROWX | Clock Pulse (2Hz) | NAND Output | ENROWX |
-|-----------|-------------------|-------------|--------|
-| 0         | 0                 | 1           | 1      |
-| 0         | 1                 | 1           | 1      |
-| 1         | 0                 | 1           | 1      |
-| 1         | 1                 | 0           | 0      |
+GameStartState | GameEndState | BLINKROWX | Clock Pulse (2Hz) | NAND Output | ENROWX |
+|--------------|--------------|-----------|-------------------|-------------|--------|
+| 0            | X            | X         | X                 | X           | 0      |
+| 1            | 0            | 0         | X                 | 1           | 1      |
+| 1            | 0            | 1         | 0                 | 1           | 1      |
+| 1            | 0            | 1         | 1                 | 0           | 0      |
+| 1            | 1            | X         | X                 | X           | 0      |
+
 
 - **When `BLINKROWX = 0`**, row is always visible.  
 - **When `BLINKROWX = 1`**, row toggles visibility at 2 Hz, making it blink.
@@ -979,6 +992,7 @@ To **delete full rows** and shift down all rows **above the deleted row**, we de
 - We define:
 
 ```math
+\begin{gather*}
 \text{L9FORCE} = ROW9FULL
 \\\\
 L8FORCE = ROW8FULL \ \text{OR} \ ROW9FULL = ROW8FULL \ \text{OR} \ L9FORCE
@@ -992,7 +1006,7 @@ L5FORCE = ROW5FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW5FULL \ \text{O
 L4FORCE = ROW4FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW4FULL \ \text{OR} \ L5FORCE
 \\\\
 L3FORCE = ROW3FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW3FULL \ \text{OR} \ L4FORCE
-
+\end{gather*}
 ```
 
 ![LFORCE](resources/LForce.PNG)
