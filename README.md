@@ -79,9 +79,11 @@ As rows are completed, they will flash for two seconds before being cleared, cau
 - [Installation](#installation)
 - [Running the Game](#running-the-game)
 - [Resources](#resources)
+  - [Tools and Software Used](#tools-and-software-used)
+  - [References and Academic Materials](#references-and-academic-materials)
+- [Acknowledgments](#acknowledgments)
 - [License](#license)
 - [Contact](#contact)
-
 
 ## Gameplay Overview
 
@@ -1260,12 +1262,96 @@ which is **not a proper counterclockwise rotation**.
 
 ## Installation
 
+1. **Clone or Download the Project:**
+   - Clone the repository using Git:
+     ```
+     git clone https://github.com/Ohtears/Tetris-w-Digital-Logic.git
+     ```
+     or download the ZIP file and extract it.
+
+2. **Prerequisites:**
+   - **Proteus Design Suite:** Ensure you have Proteus (version 8.15 or later) installed on your computer.
+
+3. **Setup:**
+   - Open Proteus and load the main schematic file ``Tetris_Digital_Project.pdsprj``.
+   - **(Optional)** Configure simulation parameters such as clock frequency according to your personal preferences.
+
+4. **Compilation/Simulation:**
+   - In Proteus, run the simulation to check that the circuit behaves as expected.
+   - Make any necessary adjustments based on the simulation feedback.
+
+5. **Additional Notes:**
+   - Refer to the detailed documentation in this README for troubleshooting and further configuration details.
+
 ## Running the Game
 
-## Resources
+1. **Start the Simulation:**
+   - With the project loaded in Proteus, click the "Run" button or press F12 shortcut to begin the simulation.
+
+2. **Game Start-Up:**
+   - Press the **Start** button on the game interface to initialize the game.
+   - The 7-segment displays will reset the timer and score, and a random 3×3 block will be generated in the top three rows.
+
+3. **Gameplay Controls:**
+   - **Start:** Begins the game.
+   - **Reset:** Resets the game and returns the circuit to its initial state.
+   - **Rotate:** Rotates the current block counterclockwise.
+   - **S_Left/S_Right:** Shifts the block left or right within the top three rows.
+   - During the initial **three-second control window**, you can adjust the block’s position and orientation **(There is an orange LED indicator for this control window placed below the 7-segment display for scores.)**. Once the block leaves the top rows, the game continues with the next block generation.
+
+4. **Game End Conditions:**
+   - The game ends if:
+     - A new block **collides** with fixed blocks in the top three rows (Full Board Condition).
+     - The game timer reaches **99 seconds**.
+   - A win is achieved when the player clears enough rows to **reach 3 points**.
+   - Use the Reset button to start a new session after the game ends.
+
+## Resources  
+
+### **Tools and Software Used**  
+- **Proteus Design Suite** – Used for circuit simulation and game logic implementation.  
+
+### **References and Academic Materials**
+- **Digital Design Principles & Practices** – By John F. Wakerly.
+- **Digital Design** – By M. Morris Mano.
+- **Course Materials from Guilan University** – Lecture notes and assignments from the *Digital Logic Design* course provided by **Professor Mahdi Aminian**.  
+
+## Acknowledgments  
+We would like to express our sincere gratitude to:  
+
+- **Professor Mahdi Aminian** and their **honorable Teaching Assistants** – For their invaluable guidance and support throughout the project.  
+- Our dear friend **Arash Parsa** – For providing valuable insights and feedback.
+---
+
+### Team Members 
+> - **Ashkan Marali** – Implementation & Debugging  
+> - **MohammadHossein Keyvanfar** – Implementation, Documentation & Optimization  
 
 ## License
 
+This project is licensed under the MIT License.
+
+```
+MIT License
+
+Copyright (c) 2025 MohammadHossein Keyvanfar
+Copyright (c) 2025 Ashkan Marali
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
 ## Contact
 
+For any questions or feedback, please feel free to reach out:
 
+- **Name:** MohammadHossein Keyvanfar
+- **Email:** [Mohammadhossein.kv@gmail.com](mailto:Mohammadhossein.Kv@gmail.com)
+- **GitHub:** [https://github.com/MohammadHosseinKv](https://github.com/MohammadHosseinKv)
+---
+- **Name:** Ashkan Marali
+- **Email:** [AshkanMarali@gmail.com](mailto:AshkanMarali@gmail.com)
+- **GitHub:** [https://github.com/Ohtears](https://github.com/Ohtears)
