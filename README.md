@@ -1,16 +1,21 @@
 <h3 align="center">Tetris (Digital Circuits Project Implemented In Proteus) </h3>
 
 ## Introduction
+
 This game is a digital block-stacking puzzle where the player's goal is to strategically guide and align falling blocks to complete rows within a limited time. The game is played on a 10x7 matrix, with blocks randomly generated in the top three rows. Players can control the position and orientation of these blocks using shift and rotation keys.
 
 As rows are completed, they will flash for two seconds before being cleared, causing all blocks above them to shift downward. Players earn points for each cleared row, with the aim of reaching a total of three points to win the game. However, the game ends if:
 
 - A block collides with a fixed block in the top three rows and cannot move out of the area.
-- The timer reaches 99 seconds. 
+- The timer reaches 99 seconds.
 
 > [!NOTE]
 >
-> This document explains the overall project, the idea behind its implementation, and the functionality of each section.
+> This document explains the overall project, the idea behind its implementation, and the functionality of each section. 
+>
+> **However if you want to jump straight to install and running the game, use the table of contents below.**
+>
+> You can watch a sample gameplay by clicking [**here**](https://github.com/Ohtears/Tetris-w-Digital-Logic/blob/main/Gameplay%20Sample.mp4).
 >
 
 ![project interface pic](resources/project_interface.png)
@@ -88,6 +93,7 @@ As rows are completed, they will flash for two seconds before being cleared, cau
 ## Gameplay Overview
 
 ### General Rules and Interface Setup
+
 The game interface consists of an 10x7 grid of LED , four seven segment responsible for displaying time and score and five control buttons which are Start , Reset , Rotate , S_Right and S_Left.
 
 In the interface, each LED can either be on or off. The LEDs in the first three rows, when lit, are red, while the LEDs in rows four to ten can be either yellow or blue.
@@ -99,7 +105,9 @@ Yellow LEDs indicate a moving block, whereas blue LEDs represent a fixed block. 
 **Winning Condition:** The player wins by successfully collecting 3 points.
 
 **Losing Conditions:**
+
 1. The player loses if a generated block collides with a fixed block while exiting the top 3 rows and cannot fully leave the area.
+
 2. The player loses if the game time reaches 99 seconds.
 
 ### Starting the Game
@@ -129,6 +137,7 @@ The objective of the game is to arrange the blocks so they align in a single row
 # Implementation Idea
 
 ## Before Game Starts
+
 After running the simulation and before pressing the start button, the last two digits of the student ID numbers of the two project group members will alternately blink on the four 7-segment displays.
 
 At the same time, the LEDs on the game matrix will illuminate in a spiral pattern from top to bottom, creating an effect similar to a light show. Please see the video below for demonstration. This adds a visually engaging prelude to the game.
@@ -181,10 +190,12 @@ To manage the state of the game, we utilize two variables: GameStartState and Ga
 ### Functionality of the States
 
 **GameStartState**:
+
 - When the Start button is pressed, a value of 1 is loaded into the register associated with the GameStartState output.
 - This register is reset only when the Reset button is pressed.
 
 **GameEndState**:
+
 - The value of GameEndState is determined by the XOR operation applied to two variables: GameWon and GameLost. 
 - These variables are explained in further detail in the section on [Game End Condition](#game-end-condition).
 
@@ -207,18 +218,22 @@ Using these two variables (GameStartState and GameEndState), we can effectively 
 This modular approach ensures clear control over the different stages of the game.
 
 ## Game End Condition
+
 To track whether the player has won or lost, we define two variables: **GameWon** and **GameLost**. These variables indicate the player's win or loss status and are stored in a register. Here’s how their values are managed:
 
 ### Reset Condition
+
 Both variables are reset to 0 when the **Reset** button is pressed.
 
 ### Load Condition
+
 - **GameWon** is set to 1 when the **WinGame** signal is activated.
 - **GameLost** is set to 1 when the **LoseGame** signal is activated.
 
 These signals are generated based on the game's win and loss conditions.
 
 ### Win Condition
+
 The player wins if they collect 3 points.
 
 The player's score is displayed on the interface using two 7-segment displays, representing the score as an 8-bit BCD (Binary-Coded Decimal) value.
@@ -242,6 +257,7 @@ Details on how **FullBoard** is determined can be found in the [Full Board Condi
 The game timer is represented as an 8-bit BCD (Binary-Coded Decimal) value. To detect when the timer reaches 99 (**1001 1001 in BCD**) seconds, the following condition is checked:
 
 If we let eight BCD Timer bits be T0...T7:
+
 ```math
 (T0 \ \text{AND} \ \neg T1 \ \text{AND} \ \neg T2 \ \text{AND} \ T3) \ \text{AND} \ (T4 \ \text{AND} \ \neg T5 \ \text{AND} \ \neg T6 \ \text{AND} \ T7)
 ```
@@ -290,7 +306,7 @@ The game timer counts the elapsed seconds and is displayed as two digits:
 - **Units Place (0–9):** Controlled by Counter A.
 - **Tens Place (0–9):** Controlled by Counter B.
 
-**Implementation of Timer Counters**
+### Implementation of Timer Counters
 
 **Counter A (Units):**
 
@@ -331,19 +347,24 @@ The player score is displayed using a similar structure to the timer, with a few
 - Instead of a 1 Hz clock, Counter A utilizes a signal known as AddScore as its clock input.
 
 **AddScore:**
+
 - The AddScore signal becomes active (1) whenever the player successfully clears a complete row of lights.
 - Further details about this signal are provided in the [Score Calculation and Row Clearing Mechanism](#score-calculation-and-row-clearing-mechanism) section.
 
 **Operation:**
+
 - Counter A increments each time it receives an AddScore pulse.
 - When Counter A reaches a value of 9, it resets to 0 and increments Counter B, similar to how the timer counters operate.
 
 **Output and Display:**
+
 - The combined output of Counter A and Counter B forms the 8-bit BCD (Binary-Coded Decimal) score value.
 - This output is sent to the BCD-to-7-segment decoders, which are controlled by tri-state buffers. The enable condition for these buffers is the same as that for the timer: 
+
 ```math
 GameStartState \ \text{AND}  \ \neg GameEndState
 ```
+
 This ensures a clear and logical display of the game timer and player score.
 
 ## Generating and Placing a Random 3x3 Block in the Game
@@ -371,6 +392,7 @@ These conditions ensure that blocks are created only when the game is active and
 **Block Shape Selection:**
 
 The 3 most significant bits (MSBs) of the LFSR output are used as a selector for an 8-to-1 multiplexer. This multiplexer has 8 inputs, each representing one of the predefined 3x3 block shapes, as follows:
+
 ```math
 \begin{gather*}
 S1: \ 010 \ 111 \ 010 \\\\
@@ -454,6 +476,7 @@ S8 =
 \end{matrix}
 \end{gather*}
 ```
+
 Each shape is represented by 9 bits (3 bits per row). The output of the multiplexer (9 bits) is stored in variables: `SHAPE0`, `SHAPE1`, ..., `SHAPE8`.
 
 ![3x3_generate_block](resources/3x3_generate_block.png)
@@ -461,9 +484,11 @@ Each shape is represented by 9 bits (3 bits per row). The output of the multiple
 ### Using Random Bits to Determine Block Position
 
 #### Block Positioning:
+
 The three least significant bits (LSBs) of the Linear Feedback Shift Register (LFSR) output are utilized as inputs to a 3-to-8 decoder. This decoder determines which three adjacent columns on the game board the block will occupy.
 
 #### Mapping Decoder Outputs to Positions:
+
 Given that the game board consists of seven columns, the possible positions are as follows:
 
 - **POS0-2**: Columns 0, 1, 2
@@ -475,6 +500,7 @@ Given that the game board consists of seven columns, the possible positions are 
 To account for the eight decoder outputs, the outputs corresponding to positions 5, 6, and 7 are merged with the first five positions using OR gates. This ensures that only valid positions are generated, increasing the likelihood of placing blocks further away from the board edges.
 
 #### Connecting to Buffers:
+
 For each position (POS0-2, POS1-3, ..., POS4-6), a 9-bit tri-state buffer is employed. The enable condition for each buffer corresponds to its respective POS signal. The output of the buffer is then connected to the appropriate columns on the game board.
 
 ### Process Summary
@@ -522,6 +548,7 @@ To ensure that a block does not shift out of bounds:
 Both conditions are combined using an AND operation with the shift signals before execution. Additionally, shifts are allowed only while the ControlCondition signal is active, which means they can only occur within the three-second control window. So The previous output will be combined with **ControlCondition** using an AND operation.
 
 **Shift Registers Clock Signal:**
+
 ```math
 \begin{gather*}
 \Big(S_\text{Left} \ \text{AND} \ (R_{0,0} \ \text{NOR} \ R_{1,0} \ \text{NOR} \ R_{2,0}) \ \text{AND} \ ControlCondition)
@@ -535,7 +562,6 @@ Both conditions are combined using an AND operation with the shift signals befor
 \text{which [}R_{0,0}-R_{1,0}-R_{2,0}\text{] are red lights in the first column and }\\ \text{[}R_{0,6}-R_{1,6}-R_{2,6}\text{] are red lights in the last column.}
 \end{gather*}
 ```
-
 
 ### Rotation Implementation
 
@@ -689,6 +715,7 @@ When either of these conditions is met, all parts of the block transition from *
 To simplify the collision logic, we first assume that **each moving light is independent** and doesn't belong to a block group. That means each individual light will turn into a fixed block only when it **personally collides** with something below it.
 
 ### **Detecting Collision for Rows 3 to 9**
+
 A collision is detected by **AND-ing the Yellow (Y) value of the current light** with the **Blue (B) value of the light directly below it**:
 
 ```math
@@ -704,6 +731,7 @@ Y(3,0) \ \text{AND} \ B(4,0)
 If this condition evaluates to **1**, the light must become part of the static grid.
 
 ### **Handling Row 10 (Last Row)**
+
 For the bottom row (row 10), there's no row below to check. Instead, we consider a light to have **collided when it simply exists**:
 
 ```math
@@ -746,6 +774,7 @@ That means:
 So far, only individual lights become fixed when they collide. However, **entire blocks need to freeze together**. Otherwise, a falling Tetris-like piece would break into smaller parts instead of landing as a unit.
 
 ### **Solution 1: Unique Block Identifiers (More General Approach)**
+
 A logical approach would be to assign **a unique 2-bit identifier** to each block at creation. This way:
 
 - Each moving light knows which block it belongs to.
@@ -760,6 +789,7 @@ This is the **ideal method** for a more scalable implementation.
 ---
 
 ### **Solution 2: Simple Proximity Locking (Current Implementation)**
+
 For a quick solution before the project deadline, we use **a less precise but functional method**:
 
 - If **any light in a row collides**, all lights in:
@@ -772,6 +802,7 @@ For a quick solution before the project deadline, we use **a less precise but fu
 This works because **all generated blocks are 3×3** in size. Given the game mechanics, this assumption is valid since no other blocks will be in this range.
 
 **Example:**
+
 - If a light in **row 6** collides:
   - **Rows 4, 5, 6, 7, and 8** all become fixed.
 
@@ -782,6 +813,7 @@ While this method **isn't as elegant as the ID-based approach**, it works **with
 ---
 
 ### **Step 4: Updating Collision Conditions for Block Groups**
+
 Previously, the **collision condition only checked individual lights**. Now, we extend it to apply to **entire block groups**.
 
 For a light at **(i, j)**:
@@ -791,21 +823,27 @@ For a light at **(i, j)**:
 ```
 
 If we use:
+
 ```math
 PIS(i, j)
 ```
+
 to denote **the independent collision condition** at (i, j). and
+
 ```math
 PISROW(i-2 \text{ to } i+2)
 ```
+
 to denote **if any collision happened in rows** (i-2 to i+2).
 
 Then:
+
 ```math
 \text{Final Collision Condition or IS}(i, j) = \neg B(i, j) \ \text{AND} \ PISROW(i-2 \text{ to } i+2)
 ```
 
 This ensures that:
+
 - **Only moving lights (not already fixed ones) are affected**.
 - **If any light in a block collides, the entire block locks**.
 
@@ -819,9 +857,11 @@ This ensures that:
 ---
 
 ### **Step 5: Updating Load Conditions**
+
 Now that blocks are freezing properly, we must ensure **fixed blocks don't shift anymore**.
 
 Each shift register should only load new data if:
+
 1. **The current light isn’t already fixed (B = 0).**
 2. **The light in the row above isn’t fixed (to prevent shifting downward).**
 3. **The collision condition(IS) hasn’t been triggered (to prevent overriding the freeze action).**
@@ -846,6 +886,7 @@ For row **4**, there’s no light above it that can be static, so as an example 
 ```
 
 This ensures:
+
 - Fixed blocks don’t shift.
 - The row below doesn’t keep shifting into a fixed row.
 - Blocks that **should freeze** don’t get overridden by a load operation.
@@ -911,11 +952,13 @@ Thus, **seven registers** (`BLINKROW3` to `BLINKROW9`) are defined, one for each
 The **Output Enable (OE) input** of the shift registers for each row is controlled using **ENROW3...ENROW9** signals.  
 
 **Blinking Logic:**
+
 1. **Use a 2 Hz clock pulse** (i.e., toggles every 0.5s).  
 2. **NAND this clock signal with BLINKROWX** (the blinking flag for that row).  
 3. **AND the result with ``GameStartState`` & NOT(``GameEndState``).**  
 
 ### **Why NAND?**
+
 - When `BLINKROWX = 0`, the **NAND output is always `1`**, keeping the row visible.  
 - When `BLINKROWX = 1`, the **NAND output toggles with the clock pulse**, causing a blinking effect.
 
@@ -945,6 +988,7 @@ GameStartState | GameEndState | BLINKROWX | Clock Pulse (2Hz) | NAND Output | EN
 - The counter **resets after 2 seconds**, stopping the blinking.
 
 ### **Counter Configuration**
+
 - **Clock Enable (CE) Input:**  
   - **OR of all `BLINKROW3...BLINKROW9`** signals.  
   - If any row is blinking, the counter starts.
@@ -954,6 +998,7 @@ GameStartState | GameEndState | BLINKROWX | Clock Pulse (2Hz) | NAND Output | EN
   - After **2 seconds**, the counter resets (`StopBlink = 0`).  
 
 ### **StopBlink Calculation**
+
 If `C0, C1, C2` are the **3-bit counter outputs** from least to most significant bit:
 
 ```math
@@ -964,6 +1009,7 @@ If `C0, C1, C2` are the **3-bit counter outputs** from least to most significant
 - `StopBlink = 0` after **2 seconds** (counter resets).  
 
 ### **Counter Reset Logic**
+
 - **Reset Input:** `StopBlink`
 - When `StopBlink = 1`, on the next **counter clock cycle (1Hz)**, the counter loads `000`, effectively resetting.
 
@@ -973,11 +1019,13 @@ If `C0, C1, C2` are the **3-bit counter outputs** from least to most significant
 
 Once `StopBlink = 1`, full row **must be deleted**.  
 
-To store full row conditions, we define **seven new registers:**  
+To store full row conditions, we define **seven new registers:**
+
 - `ROW3FULL ... ROW9FULL`  
 - These store which row was **full before deletion**.
 
 ### **Register Behavior**
+
 - **Load Input:** `BLINKROW3...BLINKROW9`
 - **Load Condition:** `StopBlink = 1` (asynchronous)
 - **Reset Condition:**  
@@ -990,11 +1038,13 @@ This ensures **ROWXFULL stays `1` for exactly 1 game shift cycle** before resett
 
 ### **Step 5: Deleting Full Rows & Shifting Upper Rows Down**  
 
-To **delete full rows** and shift down all rows **above the deleted row**, we define:  
+To **delete full rows** and shift down all rows **above the deleted row**, we define:
+
 - `L3FORCE ... L9FORCE`  
 - These force the **loading of shift registers for affected rows**, ensuring they move down.
 
 ### **Force Load Logic**
+
 - **When `ROWXFULL = 1`, all rows above `X` must shift down.**
 - We define:
 
@@ -1019,7 +1069,9 @@ L3FORCE = ROW3FULL \ \text{OR} \ ... \ \text{OR} \ ROW9FULL = ROW3FULL \ \text{O
 ![LFORCE](resources/LForce.PNG)
 
 ### **5.1 Understanding the Row Deletion Process**
+
 When a row (let’s say row X) is completely filled, all its lamps have **B = 1** (indicating they are active). The deletion process must:
+
 - **Shift all rows above it downward by one row**, including both **fixed lamps** and moving ones.
 - Ensure that the **previous state of row X does not remain** after shift. (**Overwrite lamps** in row X with the row above it.)
 
@@ -1049,11 +1101,13 @@ Thus, all shift registers for **the full row and rows above the full row** are *
 When multiple rows are full at the same time, the system must determine **which row to blink and delete first**. To enforce an **orderly deletion process**, we use a **priority encoder** and a **decoder**.
 
 #### **Priority Encoder (8-to-3)**
+
 - The priority encoder **detects the highest-numbered (deepest) full row** and assigns it the highest priority.
 - It takes **seven inputs** (`ROW3FULL` to `ROW9FULL`), each representing whether a row is full.
 - The **output is a 3-bit code**, identifying the highest-number full row.
 
 #### **Decoder (3-to-8)**
+
 - The **3-bit output** of the priority encoder is fed into a **3-to-8 decoder**.
 - The decoder converts this back into **one-hot format**, activating only the corresponding row’s **BLINKROW** signal (`BLINKROW3` to `BLINKROW9`).
 - The **highest-numbered full row** is now the only one that blinks, ensuring orderly deletion.
@@ -1072,20 +1126,24 @@ The remaining **seven outputs** control the **blinking process** for `BLINKROW3`
 ### **Step 6: Adding Score After Row Deletion**  
 
 To count the score:
+
 - A **D Flip-Flop** with **rising edge trigger** and **asynchronous reset** is used.
 - **Clock Input:** `NOR(ROW3FULL...ROW9FULL)`.  
 - **Output:** `AddScore` (acts as clock for the [score counter](#player-score)).
 
 #### **Reset Logic**
+
 - **Reset when:**  
   - Game hasn't started (`GameStartState = 0`).  
   - Game is over (`GameEndState = 1`).  
   - `AddScore` is already `1`.
+
   ```math
   \text{DFF Reset} = AddScore \ \text{OR} \ ( GameStartState \ \text{NAND} \ \neg{GameEndState})  
   ```
 
 #### **Score Incrementation**
+
 - **At game start, the NOR output is `1`.**  
 - **When a row gets deleted, `NOR(ROWXFULL) = 0` (falling edge)**.  
 - **As soon as ROWXFULL resets (`0 → 1`), NOR becomes `1` again, creating a rising edge.**  
@@ -1160,7 +1218,7 @@ IS_{4,1} \ \text{NAND} \ IS_{4,2} \ \text{NAND} \ IS_{4,3} \ \text{NAND} \ IS_{4
 IS_{4,5} \ \text{NAND} \ IS_{4,6}) \ \text{AND} \ (Y_{3,0} \ \text{OR} \ Y_{3,1} \ \text{OR} \\
 Y_{3,2} \ \text{OR} \ Y_{3,3} \ \text{OR} \ Y_{3,4} \ \text{OR} \ Y_{3,5} \ \text{OR} \ Y_{3,6})
 \end{gather*}
-``` 
+```
 
 This equation ensures that a valid collision is detected in rows 5 and 6 only when the generated block remains in the first three rows and is actively moving.
 
@@ -1193,7 +1251,6 @@ FullBoard = \Big((\text{Collision in Row 4}) \ \text{OR} \ (\text{Collision in R
 
 When this condition evaluates to **1**, the game-over state is activated in the next clock cycle, ensuring that the player loses the game as soon as an irreversible collision occurs in the top three rows.
 
-
 ![fullboard](resources/fullboard.PNG)
 
 In the implementation, the **Inner Shift (IS) variable** is directly used as the **HOLD input** of each lamp’s shift register. This means that when **IS = 0**, the **Inner Shift operation occurs**, which transitions zero to Y and Y to B value.  
@@ -1201,6 +1258,7 @@ In the implementation, the **Inner Shift (IS) variable** is directly used as the
 Since **IS is negated by design**, its logic must be carefully considered when detecting collisions in rows **5 and 6**. Instead of using a **logical OR operation** to aggregate collision results across lamps, a **NAND operation** is used.  
 
 ### **Reason for Using NAND Instead of OR**
+
 1. **Default State of IS Variables**  
    - The **default value** of all IS variables is **1** (meaning no collision is detected).  
    - When a collision is detected at a particular lamp, its IS variable transitions to **0**.  
@@ -1218,6 +1276,7 @@ This ensures that **if any IS value becomes 0 (collision detected), the entire N
 ## Notes
 
 ### **Timing Considerations in the Schematic**  
+
 Throughout the schematic design of the project, **RegClock** has been used wherever a **short delay** is required. This clock is connected to a **20 Hz signal**, which introduces a delay ranging from a **minimum of approximately 0.001 seconds to a maximum of 0.05 seconds**.  
 
 The purpose of using RegClock is to ensure that sequential operations have sufficient timing margins to execute correctly, preventing **glitches or race conditions** caused by immediate state transitions.  
@@ -1225,38 +1284,45 @@ The purpose of using RegClock is to ensure that sequential operations have suffi
 ### **Rotation Issue**  
 
 #### **Problem Overview**  
+
 For shapes that do not fully occupy a **3×3 grid**, unintended rotations can occur when shifting the shape to the **edge of the board**.  
 
 #### **Example Scenario**  
-Consider the following **vertical 3×1 shape**:  
 
-```
+Consider the following **vertical 3×1 shape**:
+
+```plaintext
 1 0 0
 1 0 0
 1 0 0
 ```
+
 If this shape is positioned in the **first column (left edge)** and rotated **twice counterclockwise**, it will end up in the **third column (right edge)** as shown below:  
 
-```
+```plaintext
 0 0 1
 0 0 1
 0 0 1
 ```
+
 Now, if the shape is shifted **two positions to the left** (back to the first column) and rotated once more, it results in:  
 
-```
+```plaintext
 1 1 1
 0 0 0
 0 0 0
 ```
+
 which is **not a proper counterclockwise rotation**.  
 
-#### **Cause of the Issue**  
+#### **Cause of the Issue**
+
 - Rotation logic assumes that the **shape remains within a fixed 3×3 grid**.  
 - When a shape is **pushed against a wall** and rotated, the board may attempt to place blocks in **invalid positions**.  
 - Since the shift operation **moves the shape before rotation**, the resulting transformation may **violate expected rotational symmetry**.  
 
-#### **Impact on Gameplay**  
+#### **Impact on Gameplay**
+
 - This issue **does not cause the game to crash** or become unplayable.  
 - However, it **introduces unexpected rotation behavior** when pieces are placed at the **left or right edges**.  
 
@@ -1264,9 +1330,11 @@ which is **not a proper counterclockwise rotation**.
 
 1. **Clone or Download the Project:**
    - Clone the repository using Git:
-     ```
+
+     ```plaintext
      git clone https://github.com/Ohtears/Tetris-w-Digital-Logic.git
      ```
+
      or download the ZIP file and extract it.
 
 2. **Prerequisites:**
@@ -1306,32 +1374,42 @@ which is **not a proper counterclockwise rotation**.
    - A win is achieved when the player clears enough rows to **reach 3 points**.
    - Use the Reset button to start a new session after the game ends.
 
+> [!NOTE]
+>
+> You can watch a sample gameplay by clicking [**here**](https://github.com/Ohtears/Tetris-w-Digital-Logic/blob/main/Gameplay%20Sample.mp4).
+>
+
 ## Resources  
 
-### **Tools and Software Used**  
+### **Tools and Software Used**
+
 - **Proteus Design Suite** – Used for circuit simulation and game logic implementation.  
 
 ### **References and Academic Materials**
+
 - **Digital Design Principles & Practices** – By John F. Wakerly.
 - **Digital Design** – By M. Morris Mano.
 - **Course Materials from Guilan University** – Lecture notes and assignments from the *Digital Logic Design* course provided by **Professor Mahdi Aminian**.  
 
-## Acknowledgments  
+## Acknowledgments
+
 We would like to express our sincere gratitude to:  
 
 - **Professor Mahdi Aminian** and their **honorable Teaching Assistants** – For their invaluable guidance and support throughout the project.  
 - Our dear friend **Arash Parsa** – For providing valuable insights and feedback.
+
 ---
 
-### Team Members 
-> - **Ashkan Marali** – Implementation & Debugging  
+### Team Members
+
 > - **MohammadHossein Keyvanfar** – Implementation, Documentation & Optimization  
+> - **Ashkan Marali** – Implementation & Debugging  
 
 ## License
 
 This project is licensed under the MIT License.
 
-```
+```plaintext
 MIT License
 
 Copyright (c) 2025 MohammadHossein Keyvanfar
@@ -1351,7 +1429,9 @@ For any questions or feedback, please feel free to reach out:
 - **Name:** MohammadHossein Keyvanfar
 - **Email:** [Mohammadhossein.kv@gmail.com](mailto:Mohammadhossein.Kv@gmail.com)
 - **GitHub:** [https://github.com/MohammadHosseinKv](https://github.com/MohammadHosseinKv)
+
 ---
+
 - **Name:** Ashkan Marali
 - **Email:** [AshkanMarali@gmail.com](mailto:AshkanMarali@gmail.com)
 - **GitHub:** [https://github.com/Ohtears](https://github.com/Ohtears)
