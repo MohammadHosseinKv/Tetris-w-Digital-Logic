@@ -1,6 +1,6 @@
-<h3 align="center">Tetris (Digital Circuits Project Implemented In Proteus) </h3>
+# Tetris (Digital Circuits Project Implemented In Proteus)
 
-## Introduction
+### Introduction
 
 This game is a digital block-stacking puzzle where the player's goal is to strategically guide and align falling blocks to complete rows within a limited time. The game is played on a 10x7 matrix, with blocks randomly generated in the top three rows. Players can control the position and orientation of these blocks using shift and rotation keys.
 
@@ -11,7 +11,7 @@ As rows are completed, they will flash for two seconds before being cleared, cau
 
 > [!NOTE]
 >
-> This document explains the overall project, the idea behind its implementation, and the functionality of each section. 
+> This document explains the overall project, the idea behind its implementation, and the functionality of each section.
 >
 > **However if you want to jump straight to install and running the game, use the table of contents below.**
 >
@@ -66,7 +66,7 @@ As rows are completed, they will flash for two seconds before being cleared, cau
     - [Step 5: Updating Load Conditions](#step-5-updating-load-conditions)
     - [Supplementary Information](#supplementary-information)
   - [Score Calculation and Row Clearing Mechanism](#score-calculation-and-row-clearing-mechanism)
-    - [Step 1: Detecting and Blinking Full Rows Before Deletiion](#step-1-detecting-and-blinking-full-rows-before-deletiion)
+    - [Step 1: Detecting and Blinking Full Rows Before Deletion](#step-1-detecting-and-blinking-full-rows-before-deletion)
     - [Step 2: Generating the Blinking Signal for Rows](#step-2-generating-the-blinking-signal-for-rows)
     - [Step 3: Controlling the Blinking Duration (2 Seconds Limit)](#step-3-controlling-the-blinking-duration-2-seconds-limit)
     - [Step 4: Define And Store Row Full Condition](#step-4-define-and-store-row-full-condition)
@@ -915,7 +915,7 @@ That said, given the constraints, this method **worked well for meeting the dead
 
 This section explains the **scoring system and row clearing mechanism** in the game, detailing how a **full row is detected, blinked, deleted, and how upper rows shift down accordingly.** It also explains the logic behind score incrementing after a row is cleared.  
 
-### **Step 1: Detecting and Blinking Full Rows Before Deletiion**
+### **Step 1: Detecting and Blinking Full Rows Before Deletion**
 
 A row is considered **full** when all its lights are **Blue (Fixed Blocks)**. This check applies to **rows 4 to 10**.  
 
@@ -1214,7 +1214,7 @@ The Boolean equation for collision detection in rows 5 and 6 is structured as fo
 \begin{gather*}
 (IS_{3,0} \ \text{NAND} \ IS_{3,1} \ \text{NAND} \ IS_{3,2} \ \text{NAND} \ IS_{3,3} \ \text{NAND} \\
 IS_{3,4} \ \text{NAND} \ IS_{3,5} \ \text{NAND} \ IS_{3,6} \ \text{NAND} \ IS_{4,0} \ \text{NAND} \\
-IS_{4,1} \ \text{NAND} \ IS_{4,2} \ \text{NAND} \ IS_{4,3} \ \text{NAND} \ IS_{4,4} \text{NAND} \\
+IS_{4,1} \ \text{NAND} \ IS_{4,2} \ \text{NAND} \ IS_{4,3} \ \text{NAND} \ IS_{4,4} \ \text{NAND} \\
 IS_{4,5} \ \text{NAND} \ IS_{4,6}) \ \text{AND} \ (Y_{3,0} \ \text{OR} \ Y_{3,1} \ \text{OR} \\
 Y_{3,2} \ \text{OR} \ Y_{3,3} \ \text{OR} \ Y_{3,4} \ \text{OR} \ Y_{3,5} \ \text{OR} \ Y_{3,6})
 \end{gather*}
@@ -1273,7 +1273,7 @@ Since **IS is negated by design**, its logic must be carefully considered when d
 
 This ensures that **if any IS value becomes 0 (collision detected), the entire NAND operation produces 1**, correctly signaling a collision while maintaining compatibility with the hardware’s use of IS in shift registers.
 
-## Notes
+# Notes
 
 ### **Timing Considerations in the Schematic**  
 
@@ -1326,7 +1326,7 @@ which is **not a proper counterclockwise rotation**.
 - This issue **does not cause the game to crash** or become unplayable.  
 - However, it **introduces unexpected rotation behavior** when pieces are placed at the **left or right edges**.  
 
-## Installation
+# Installation
 
 1. **Clone or Download the Project:**
    - Clone the repository using Git:
@@ -1351,7 +1351,7 @@ which is **not a proper counterclockwise rotation**.
 5. **Additional Notes:**
    - Refer to the detailed documentation in this README for troubleshooting and further configuration details.
 
-## Running the Game
+# Running the Game
 
 1. **Start the Simulation:**
    - With the project loaded in Proteus, click the "Run" button or press F12 shortcut to begin the simulation.
@@ -1379,7 +1379,7 @@ which is **not a proper counterclockwise rotation**.
 > You can download a sample gameplay by clicking [**here**](https://github.com/Ohtears/Tetris-w-Digital-Logic/raw/refs/heads/main/Gameplay%20Sample.mp4).
 >
 
-## Resources  
+# Resources  
 
 ### **Tools and Software Used**
 
@@ -1391,7 +1391,7 @@ which is **not a proper counterclockwise rotation**.
 - **Digital Design** – By M. Morris Mano.
 - **Course Materials from Guilan University** – Lecture notes and assignments from the *Digital Logic Design* course provided by **Professor Mahdi Aminian**.  
 
-## Acknowledgments
+# Acknowledgments
 
 We would like to express our sincere gratitude to:  
 
@@ -1405,7 +1405,7 @@ We would like to express our sincere gratitude to:
 > - **MohammadHossein Keyvanfar** – Implementation, Documentation & Optimization  
 > - **Ashkan Marali** – Implementation & Debugging  
 
-## License
+# License
 
 This project is licensed under the MIT License.
 
@@ -1422,7 +1422,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## Contact
+# Contact
 
 For any questions or feedback, please feel free to reach out:
 
